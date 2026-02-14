@@ -13,3 +13,10 @@ export const OUTLET_ROUTES = {
   CREATE: "/outlets/create",
   DELETE: "/outlets/delete",
 } as const;
+
+export const DEPARTMENT_ROUTES = {
+  GET: "/departments/get",
+  CREATE: "/departments/create",
+  UPDATE: "/departments/update",
+  DELETE: "/departments/delete",
+} as const;

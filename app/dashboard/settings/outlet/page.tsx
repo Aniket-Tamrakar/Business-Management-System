@@ -5,8 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import ConfirmModal from "../../components/Modal/ConfirmModal";
-import Modal from "../../components/Modal/Modal";
+import ConfirmModal from "../../../components/Modal/ConfirmModal";
+import Modal from "../../../components/Modal/Modal";
 import {
   createOutlet as createOutletApi,
   deleteOutlet as deleteOutletApi,

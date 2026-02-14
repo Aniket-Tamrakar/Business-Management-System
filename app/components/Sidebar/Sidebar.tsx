@@ -96,7 +96,7 @@ const sidebarConfig = {
           menu: {
             title: "Settings",
             items: [
-              { label: "Outlets", href: "/dashboard/outlet" },
+              { label: "Outlets", href: "/dashboard/settings/outlet" },
               { label: "Users", href: "/dashboard/settings/users" },
               { label: "Departments", href: "/dashboard/settings/departments" },
             ],

@@ -1,6 +1,6 @@
 "use client";
 
-import Modal from "../../components/Modal/Modal";
+import Modal from "../../../components/Modal/Modal";
 import type { Outlet } from "@/handlers/outlet";
 
 type OutletEditModalProps = {
