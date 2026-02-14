@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { IoBagHandleOutline } from "react-icons/io5";
-import { LuReceiptText, LuUserCog } from "react-icons/lu";
-import { TbLayoutDashboard, TbUsers } from "react-icons/tb";
 import { CiSettings } from "react-icons/ci";
 import { FiUsers } from "react-icons/fi";
+import { IoBagHandleOutline } from "react-icons/io5";
+import { LuReceiptText, LuUserCog } from "react-icons/lu";
+import { TbLayoutDashboard } from "react-icons/tb";
 
 const sidebarConfig = {
   header: {
