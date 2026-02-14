@@ -1,34 +1,58 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { register as registerApi } from "@/handlers/auth";
+import { registerSchema, type RegisterFormValues } from "@/schema/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
+  const {
+    register: registerField,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      email: "",
+      userName: "",
+      fullName: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
-      setError("Please fill in all fields.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-    router.push("/dashboard");
+  const mutation = useMutation({
+    mutationFn: (values: RegisterFormValues) =>
+      registerApi({
+        email: values.email,
+        userName: values.userName,
+        fullName: values.fullName,
+        password: values.password,
+        confirmPassword: values.confirmPassword,
+      }),
+    onSuccess: (result) => {
+      if (result.ok) {
+        router.push("/login");
+      } else {
+        setError("root", { message: result.error });
+      }
+    },
+    onError: () => {
+      setError("root", { message: "Something went wrong. Please try again." });
+    },
+  });
+
+  const onSubmit = (data: RegisterFormValues) => {
+    mutation.mutate(data);
   };
+
+  const loading = mutation.isPending;
+  const errorMessage = errors.root?.message;
 
   return (
     <div className="authCard">
@@ -37,59 +61,87 @@ export default function RegisterPage() {
         <p className="authSubtitle">Register to get started with BMS.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="authForm">
-        {error && <p className="authError">{error}</p>}
-        <label htmlFor="register-name" className="authField">
-          <span className="authLabel">Name</span>
+      <form onSubmit={handleSubmit(onSubmit)} className="authForm">
+        {errorMessage && <p className="authError">{errorMessage}</p>}
+        <label htmlFor="register-username" className="authField">
+          <span className="authLabel">User name</span>
           <input
-            id="register-name"
+            id="register-username"
             type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Your name"
+            placeholder="e.g. John"
+            className="authInput"
+            autoComplete="username"
+            {...registerField("userName")}
+          />
+          {errors.userName && (
+            <span className="authFieldError">{errors.userName.message}</span>
+          )}
+        </label>
+        <label htmlFor="register-fullname" className="authField">
+          <span className="authLabel">Full name</span>
+          <input
+            id="register-fullname"
+            type="text"
+            placeholder="e.g. John Doe"
             className="authInput"
             autoComplete="name"
+            {...registerField("fullName")}
           />
+          {errors.fullName && (
+            <span className="authFieldError">{errors.fullName.message}</span>
+          )}
         </label>
         <label htmlFor="register-email" className="authField">
           <span className="authLabel">Email</span>
           <input
             id="register-email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             className="authInput"
             autoComplete="email"
+            {...registerField("email")}
           />
+          {errors.email && (
+            <span className="authFieldError">{errors.email.message}</span>
+          )}
         </label>
         <label htmlFor="register-password" className="authField">
           <span className="authLabel">Password</span>
           <input
             id="register-password"
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
             className="authInput"
             autoComplete="new-password"
+            {...registerField("password")}
           />
+          {errors.password && (
+            <span className="authFieldError">{errors.password.message}</span>
+          )}
         </label>
         <label htmlFor="register-confirm" className="authField">
           <span className="authLabel">Confirm password</span>
           <input
             id="register-confirm"
             type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="••••••••"
             className="authInput"
             autoComplete="new-password"
+            {...registerField("confirmPassword")}
           />
+          {errors.confirmPassword && (
+            <span className="authFieldError">
+              {errors.confirmPassword.message}
+            </span>
+          )}
         </label>
         <div className="authActions">
-          <button type="submit" className="authButton authButtonPrimary">
-            Create account
+          <button
+            type="submit"
+            className="authButton authButtonPrimary"
+            disabled={loading}
+          >
+            {loading ? "Creating account…" : "Create account"}
           </button>
         </div>
       </form>

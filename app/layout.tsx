@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import LayoutWrapper from "./components/LayoutWrapper";
+import QueryProvider from "./providers/QueryProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,7 +30,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <div className="min-h-screen bg-zinc-50 font-sans dark:bg-black">
-          <LayoutWrapper>{children}</LayoutWrapper>
+          <QueryProvider>
+            <LayoutWrapper>{children}</LayoutWrapper>
+          </QueryProvider>
         </div>
       </body>
     </html>

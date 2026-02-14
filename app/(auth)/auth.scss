@@ -76,6 +76,12 @@
   border-radius: 8px;
 }
 
+.authFieldError {
+  font-size: 11px;
+  color: #dc2626;
+  margin-top: 2px;
+}
+
 .authActions {
   display: flex;
   flex-direction: column;
@@ -99,6 +105,11 @@
   border-color: #02955a;
   background: #02955a;
   color: #ffffff;
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
 }
 
 .authFooter {
