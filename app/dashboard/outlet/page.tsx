@@ -1,42 +1,139 @@
-
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import ConfirmModal from "../../components/Modal/ConfirmModal";
+import Modal from "../../components/Modal/Modal";
+import {
+  createOutlet as createOutletApi,
+  deleteOutlet as deleteOutletApi,
+  getOutlets,
+  type Outlet,
+} from "@/handlers/outlet";
+import { createOutletSchema, type CreateOutletFormValues } from "@/schema/outlet";
 import "./outlet.scss";
-import { useState } from "react";
 import OutletEditModal from "./OutletEditModal";
-type Outlet = {
-  id: string;
-  name: string;
-  manager: string;
-  contact: string;
-  status: string;
-  employees: string;
+
+const OUTLETS_QUERY_KEY = ["outlets"];
+
+const defaultAddFormValues: CreateOutletFormValues = {
+  name: "",
+  managerId: "",
+  contact: "",
+  status: "Active",
 };
 
-const outlets: Outlet[] = [
-  {
-    id: "main-processing",
-    name: "Main Processing Plant",
-    manager: "John smith",
-    contact: "+977-9800390288",
-    status: "Active",
-    employees: "45 Employee",
-  },
-  {
-    id: "warehouse",
-    name: "Warehouse",
-    manager: "John smith",
-    contact: "+977-9800390288",
-    status: "Active",
-    employees: "45 Employee",
-  },
-];
-
 export default function OutletPage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [selectedOutletId, setSelectedOutletId] = useState<string | null>(null);
-  const selectedOutlet =
-    outlets.find((outlet) => outlet.id === selectedOutletId) ?? outlets[0];
-  const closeModal = () => setSelectedOutletId(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [outletToDelete, setOutletToDelete] = useState<Outlet | null>(null);
+  const menuButtonRef = useRef<HTMLDivElement>(null);
+
+  const {
+    data: outlets = [],
+    isLoading: outletsLoading,
+    isError: outletsError,
+    error: outletsErrorDetail,
+  } = useQuery({
+    queryKey: OUTLETS_QUERY_KEY,
+    queryFn: async () => {
+      const result = await getOutlets();
+      if (!result.ok) {
+        if (result.status === 401) router.push("/login");
+        throw new Error(result.error);
+      }
+      return result.data;
+    },
+  });
+
+  const selectedOutlet = outlets.find(
+    (outlet) => outlet.id === selectedOutletId
+  );
+  const closeEditModal = () => setSelectedOutletId(null);
+
+  const {
+    register,
+    handleSubmit,
+    setError,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateOutletFormValues>({
+    resolver: zodResolver(createOutletSchema),
+    defaultValues: defaultAddFormValues,
+  });
+
+  useEffect(() => {
+    if (!isAddModalOpen) reset(defaultAddFormValues);
+  }, [isAddModalOpen, reset]);
+
+  useEffect(() => {
+    if (!openMenuId) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        menuButtonRef.current &&
+        !menuButtonRef.current.contains(e.target as Node)
+      ) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [openMenuId]);
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteOutletApi(id),
+    onSuccess: (result) => {
+      if (result.ok) {
+        setOutletToDelete(null);
+        queryClient.invalidateQueries({ queryKey: OUTLETS_QUERY_KEY });
+      } else {
+        if (result.status === 401) router.push("/login");
+      }
+    },
+  });
+
+  const handleConfirmDelete = () => {
+    if (outletToDelete) {
+      deleteMutation.mutate(outletToDelete.id);
+    }
+  };
+
+  const createMutation = useMutation({
+    mutationFn: (values: CreateOutletFormValues) =>
+      createOutletApi({
+        name: values.name,
+        managerId: values.managerId,
+        contact: values.contact,
+        status: values.status,
+      }),
+    onSuccess: (result) => {
+      if (result.ok) {
+        setIsAddModalOpen(false);
+        queryClient.invalidateQueries({ queryKey: OUTLETS_QUERY_KEY });
+      } else {
+        if (result.status === 401) {
+          router.push("/login");
+          return;
+        }
+        setError("root", { message: result.error });
+      }
+    },
+    onError: () => {
+      setError("root", { message: "Something went wrong. Please try again." });
+    },
+  });
+
+  const onAddSubmit = (data: CreateOutletFormValues) => {
+    createMutation.mutate(data);
+  };
+
+  const loading = isSubmitting || createMutation.isPending;
 
   return (
     <section className="outletPage">
@@ -44,32 +141,93 @@ export default function OutletPage() {
         <span>Settings</span> {"›"} Outlet Management
       </div>
 
-      <div className="pageHeader">
-        <h1 className="pageTitle">Outlet Management</h1>
-        <p className="pageSubtitle">
-          Manage processing plants, retail stores, and distribution centers
-        </p>
+      <div className="outletHeader">
+        <div className="outletHeaderText">
+          <h1 className="pageTitle">Outlet Management</h1>
+          <p className="pageSubtitle">
+            Manage processing plants, retail stores, and distribution centers
+          </p>
+        </div>
+        <button
+          type="button"
+          className="button buttonPrimary"
+          onClick={() => setIsAddModalOpen(true)}
+        >
+          Add Outlet
+        </button>
       </div>
 
       <div className="cardList">
-        {outlets.map((outlet) => (
+        {outletsLoading && (
+          <p className="outletPageMessage">Loading outlets…</p>
+        )}
+        {outletsError && (
+          <p className="outletPageMessage outletPageError">
+            {outletsErrorDetail instanceof Error
+              ? outletsErrorDetail.message
+              : "Failed to load outlets"}
+          </p>
+        )}
+        {!outletsLoading && !outletsError && outlets.length === 0 && (
+          <p className="outletPageMessage">No outlets yet. Add one to get started.</p>
+        )}
+        {!outletsLoading &&
+          !outletsError &&
+          outlets.map((outlet) => (
           <article key={outlet.id} className="card">
             <div className="cardTop">
-              <h2 className="cardTitle">{outlet.name}</h2>
+              <div className="cardTitleBlock">
+                <h2 className="cardTitle">{outlet.name}</h2>
+                <span className="cardId">{outlet.id}</span>
+              </div>
               <div className="badgeGroup">
-                <span className="badge badgeActive">
-                  {outlet.status}
+                <span
+                  className={
+                    outlet.status ? "badge badgeActive" : "badge"
+                  }
+                >
+                  {outlet.status ? "Active" : "Inactive"}
                 </span>
-                <span className="badge">{outlet.employees}</span>
+                <div
+                  className="cardMenuWrap"
+                  ref={openMenuId === outlet.id ? menuButtonRef : undefined}
+                >
+                  <button
+                    type="button"
+                    className="cardMenuTrigger"
+                    onClick={() =>
+                      setOpenMenuId((id) => (id === outlet.id ? null : outlet.id))
+                    }
+                    aria-label="More options"
+                    aria-expanded={openMenuId === outlet.id}
+                  >
+                    ⋮
+                  </button>
+                  {openMenuId === outlet.id && (
+                    <div className="cardMenuDropdown">
+                      <button
+                        type="button"
+                        className="cardMenuItem cardMenuItemDanger"
+                        onClick={() => {
+                          setOutletToDelete(outlet);
+                          setOpenMenuId(null);
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="cardBody">
               <label className="field">
-                <span className="label">Manager</span>
+                <span className="label">Manager ID</span>
                 <input
                   className="input"
-                  defaultValue={outlet.manager}
+                  defaultValue={outlet.managerId}
+                  readOnly
                 />
               </label>
 
@@ -78,12 +236,18 @@ export default function OutletPage() {
                 <input
                   className="input"
                   defaultValue={outlet.contact}
+                  readOnly
                 />
               </label>
 
               <label className="field">
                 <span className="label">Status</span>
-                <select className="select" defaultValue={outlet.status}>
+                <select
+                  className="select"
+                  defaultValue={outlet.status ? "Active" : "Inactive"}
+                  disabled
+                  aria-readonly="true"
+                >
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
                 </select>
@@ -103,14 +267,112 @@ export default function OutletPage() {
               </button>
             </div>
           </article>
-        ))}
+          ))}
       </div>
 
-      <OutletEditModal
-        isOpen={Boolean(selectedOutletId)}
-        outlet={selectedOutlet}
-        onClose={closeModal}
+      {selectedOutlet && (
+        <OutletEditModal
+          isOpen={Boolean(selectedOutletId)}
+          outlet={selectedOutlet}
+          onClose={closeEditModal}
+        />
+      )}
+
+      <ConfirmModal
+        isOpen={!!outletToDelete}
+        title="Delete outlet"
+        message={
+          outletToDelete
+            ? `Are you sure you want to delete "${outletToDelete.name}"? This action cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        loading={deleteMutation.isPending}
+        onClose={() => setOutletToDelete(null)}
+        onConfirm={handleConfirmDelete}
       />
+
+      <Modal
+        isOpen={isAddModalOpen}
+        title="Add Outlet"
+        subtitle="Quickly add a new outlet to your organization"
+        onClose={() => setIsAddModalOpen(false)}
+        footer={
+          <>
+            <button
+              type="button"
+              className="button modalButton"
+              onClick={() => setIsAddModalOpen(false)}
+            >
+              Discard
+            </button>
+            <button
+              type="submit"
+              form="add-outlet-form"
+              className="button buttonPrimary modalButton"
+              disabled={loading}
+            >
+              {loading ? "Saving…" : "Save"}
+            </button>
+          </>
+        }
+      >
+        <form
+          id="add-outlet-form"
+          onSubmit={handleSubmit(onAddSubmit)}
+          className="outletAddForm"
+        >
+          {errors.root?.message && (
+            <p className="outletFormError">{errors.root.message}</p>
+          )}
+          <label className="modalField">
+            <span className="label">Outlet name</span>
+            <input
+              className="input"
+              placeholder="e.g. Main processing plant"
+              {...register("name")}
+            />
+            {errors.name && (
+              <span className="outletFieldError">{errors.name.message}</span>
+            )}
+          </label>
+          <label className="modalField">
+            <span className="label">Manager ID (user UUID)</span>
+            <input
+              className="input"
+              placeholder="e.g. 601756be-54be-4623-8e97-7ff891e43081"
+              {...register("managerId")}
+            />
+            {errors.managerId && (
+              <span className="outletFieldError">
+                {errors.managerId.message}
+              </span>
+            )}
+          </label>
+          <label className="modalField">
+            <span className="label">Contact</span>
+            <input
+              className="input"
+              placeholder="e.g. 987654321"
+              {...register("contact")}
+            />
+            {errors.contact && (
+              <span className="outletFieldError">
+                {errors.contact.message}
+              </span>
+            )}
+          </label>
+          <label className="modalField">
+            <span className="label">Status</span>
+            <select className="select" {...register("status")}>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </label>
+        </form>
+      </Modal>
     </section>
   );
 }

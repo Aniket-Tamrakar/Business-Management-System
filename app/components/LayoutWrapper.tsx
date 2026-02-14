@@ -19,7 +19,7 @@ export default function LayoutWrapper({
   return (
     <div className="flex min-h-screen w-full">
       <Sidebar />
-      <main className="flex min-h-screen flex-1 flex-col items-center justify-between rounded-3xl bg-white px-8 pt-8 pb-[7px] dark:bg-black sm:items-start">
+      <main className="flex min-h-screen flex-1 flex-col items-center justify-between  bg-white px-8 pt-8 pb-[7px] dark:bg-black sm:items-start">
         {children}
       </main>
     </div>

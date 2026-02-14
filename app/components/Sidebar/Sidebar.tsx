@@ -1,11 +1,15 @@
 "use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { CiSettings } from "react-icons/ci";
 import { FiUsers } from "react-icons/fi";
 import { IoBagHandleOutline } from "react-icons/io5";
 import { LuReceiptText, LuUserCog } from "react-icons/lu";
 import { TbLayoutDashboard } from "react-icons/tb";
+import { logout as logoutApi } from "@/handlers/auth";
+import { clearAuthToken } from "@/lib/auth/token";
 
 const sidebarConfig = {
   header: {
@@ -104,6 +108,7 @@ const sidebarConfig = {
 };
 
 export default function Sidebar() {
+  const router = useRouter();
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const allItems = useMemo(
     () => [
@@ -116,6 +121,13 @@ export default function Sidebar() {
   const activeMenu = allItems.find((item) => item.id === activeMenuId)?.menu;
   const handleMenuToggle = (id: string) => {
     setActiveMenuId((current) => (current === id ? null : id));
+  };
+
+  const handleLogout = async () => {
+    await logoutApi();
+    clearAuthToken();
+    setActiveMenuId(null);
+    router.push("/login");
   };
 
   return (
@@ -179,7 +191,17 @@ export default function Sidebar() {
             </Link>
           ))}
         </div>
+        <div className="drawerFooter">
+          <button
+            type="button"
+            className="drawerItemLogout"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        </div>
       </div>
+   
     </div>
   );
 }

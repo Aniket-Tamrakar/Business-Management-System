@@ -1,3 +1,5 @@
+import { clearAuthToken, getAuthToken } from "@/lib/auth/token";
+
 const getBaseUrl = (): string => {
   if (typeof window !== "undefined") {
     return process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -20,8 +22,10 @@ export async function apiRequest<T>(
   }
 
   const url = `${baseUrl.replace(/\/$/, "")}${route}`;
+  const token = getAuthToken();
   const headers: HeadersInit = {
     "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
 
@@ -30,6 +34,9 @@ export async function apiRequest<T>(
     const data = await res.json().catch(() => ({})) as T & ApiError;
 
     if (!res.ok) {
+      if (res.status === 401) {
+        clearAuthToken();
+      }
       const msg = (data as ApiError).message ?? (data as ApiError).error;
       return { ok: false, error: typeof msg === "string" ? msg : "Request failed.", status: res.status };
     }

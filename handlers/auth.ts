@@ -13,9 +13,18 @@ export type RegisterPayload = {
   status: boolean;
 };
 
+export type AuthResponseData = {
+  success?: boolean;
+  message?: string;
+  accessToken?: string;
+  token?: string;
+  [key: string]: unknown;
+};
+
 export type RegisterResponse = {
   success?: boolean;
   message?: string;
+  data?: AuthResponseData;
   [key: string]: unknown;
 };
 
@@ -27,9 +36,17 @@ export type LoginPayload = {
 export type LoginResponse = {
   success?: boolean;
   message?: string;
+  data?: AuthResponseData;
+  accessToken?: string;
   token?: string;
   [key: string]: unknown;
 };
+
+/** Get stored auth token from login/register API response (handles data.accessToken or data.token) */
+export function getTokenFromAuthResponse(response: LoginResponse | RegisterResponse): string | undefined {
+  const data = response.data ?? response;
+  return (data as AuthResponseData).accessToken ?? (data as AuthResponseData).token;
+}
 
 export async function register(payload: Omit<RegisterPayload, "roleId" | "status">) {
   const body: RegisterPayload = {
@@ -47,5 +64,11 @@ export async function login(payload: LoginPayload) {
   return apiRequest<LoginResponse>(AUTH_ROUTES.LOGIN, {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export async function logout() {
+  return apiRequest<{ success?: boolean; message?: string }>(AUTH_ROUTES.LOGOUT, {
+    method: "POST",
   });
 }

@@ -1,15 +1,7 @@
 "use client";
 
 import Modal from "../../components/Modal/Modal";
-
-type Outlet = {
-  id: string;
-  name: string;
-  manager: string;
-  contact: string;
-  status: string;
-  employees: string;
-};
+import type { Outlet } from "@/handlers/outlet";
 
 type OutletEditModalProps = {
   isOpen: boolean;
@@ -26,7 +18,7 @@ export default function OutletEditModal({
     <Modal
       isOpen={isOpen}
       title="Manage Outlet"
-      subtitle="Quickly manage outlets"
+      subtitle={outlet.id}
       onClose={onClose}
       footer={
         <>
@@ -39,33 +31,31 @@ export default function OutletEditModal({
         </>
       }
     >
-          <label className="modalField">
-            <span className="label">Outlet</span>
-            <input className="input" defaultValue={outlet.name} />
-          </label>
+      <label className="modalField">
+        <span className="label">Outlet</span>
+        <input className="input" defaultValue={outlet.name} />
+      </label>
 
-          <label className="modalField">
-            <span className="label">Manager</span>
-            <input className="input" defaultValue={outlet.manager} />
-          </label>
+      <label className="modalField">
+        <span className="label">Manager ID</span>
+        <input className="input" defaultValue={outlet.managerId} />
+      </label>
 
-          <label className="modalField">
-            <span className="label">Status</span>
-            <select className="select" defaultValue={outlet.status}>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </label>
+      <label className="modalField">
+        <span className="label">Status</span>
+        <select
+          className="select"
+          defaultValue={outlet.status ? "Active" : "Inactive"}
+        >
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </label>
 
-          <label className="modalField">
-            <span className="label">Contact</span>
-            <input className="input" defaultValue={outlet.contact} />
-          </label>
-
-          <label className="modalField">
-            <span className="label">Email</span>
-            <input className="input" defaultValue="abc@email.com" />
-          </label>
+      <label className="modalField">
+        <span className="label">Contact</span>
+        <input className="input" defaultValue={outlet.contact} />
+      </label>
     </Modal>
   );
 }

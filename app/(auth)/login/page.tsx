@@ -1,9 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { getTokenFromAuthResponse, login as loginApi } from "@/handlers/auth";
+import { setAuthToken } from "@/lib/auth/token";
 import { loginSchema, type LoginFormValues } from "@/schema/auth";
 
 export default function LoginPage() {
@@ -11,16 +14,39 @@ export default function LoginPage() {
   const {
     register: registerField,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
 
+  const mutation = useMutation({
+    mutationFn: (values: LoginFormValues) =>
+      loginApi({ email: values.email, password: values.password }),
+    onSuccess: (result) => {
+      if (result.ok) {
+        const token = getTokenFromAuthResponse(result.data);
+        if (token) {
+          setAuthToken(token);
+          router.push("/dashboard");
+        } else {
+          setError("root", { message: "No token received. Please try again." });
+        }
+      } else {
+        setError("root", { message: result.error });
+      }
+    },
+    onError: () => {
+      setError("root", { message: "Something went wrong. Please try again." });
+    },
+  });
+
   const onSubmit = (data: LoginFormValues) => {
-    // TODO: call login API via useMutation when endpoint is ready
-    router.push("/dashboard");
+    mutation.mutate(data);
   };
+
+  const loading = isSubmitting || mutation.isPending;
 
   return (
     <div className="authCard">
@@ -65,9 +91,9 @@ export default function LoginPage() {
           <button
             type="submit"
             className="authButton authButtonPrimary"
-            disabled={isSubmitting}
+            disabled={loading}
           >
-            {isSubmitting ? "Signing in…" : "Sign in"}
+            {loading ? "Signing in…" : "Sign in"}
           </button>
         </div>
       </form>

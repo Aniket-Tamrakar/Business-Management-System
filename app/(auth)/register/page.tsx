@@ -5,7 +5,8 @@ import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { register as registerApi } from "@/handlers/auth";
+import { getTokenFromAuthResponse, register as registerApi } from "@/handlers/auth";
+import { setAuthToken } from "@/lib/auth/token";
 import { registerSchema, type RegisterFormValues } from "@/schema/auth";
 
 export default function RegisterPage() {
@@ -37,7 +38,13 @@ export default function RegisterPage() {
       }),
     onSuccess: (result) => {
       if (result.ok) {
-        router.push("/login");
+        const token = getTokenFromAuthResponse(result.data);
+        if (token) {
+          setAuthToken(token);
+          router.push("/dashboard");
+        } else {
+          router.push("/login");
+        }
       } else {
         setError("root", { message: result.error });
       }

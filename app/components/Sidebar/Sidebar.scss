@@ -94,6 +94,8 @@
 .drawer {
   width: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: #ffffff;
   border-right: 1px solid rgba(0, 0, 0, 0.06);
   transition: width 0.2s ease;
@@ -101,6 +103,7 @@
 
 .drawer.open {
   width: 240px;
+  min-height: 100vh;
 }
 
 .drawerHeader {
@@ -127,10 +130,18 @@
 }
 
 .drawerBody {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.drawerFooter {
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .drawerItem {
@@ -145,5 +156,23 @@
 
 .drawerItem:hover {
   background: rgba(17, 24, 39, 0.06);
+}
+
+.drawerItemLogout {
+  width: 100%;
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  color: #dc2626;
+}
+
+.drawerItemLogout:hover {
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
 }
 
