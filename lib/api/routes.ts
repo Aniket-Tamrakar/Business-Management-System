@@ -20,3 +20,10 @@ export const DEPARTMENT_ROUTES = {
   UPDATE: "/departments/update",
   DELETE: "/departments/delete",
 } as const;
+
+export const PRODUCT_TYPE_ROUTES = {
+  GET: "/product-types/get",
+  CREATE: "/product-types/create",
+  UPDATE: "/product-types/update",
+  DELETE: "/product-types/delete",
+} as const;

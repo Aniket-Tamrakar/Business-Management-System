@@ -49,9 +49,9 @@ const sidebarConfig = {
           href: "#",
           icon: <IoBagHandleOutline size={20} />,
           menu: {
-            title: "Orders",
+            title: "Product",
             items: [
-              { label: "All orders", href: "/dashboard/orders" },
+              { label: "Product Type", href: "/dashboard/product/productType" },
               { label: "Returns", href: "/dashboard/orders/returns" },
               { label: "Shipments", href: "/dashboard/orders/shipments" },
             ],

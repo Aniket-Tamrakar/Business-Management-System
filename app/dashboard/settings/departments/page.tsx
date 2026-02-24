@@ -113,10 +113,21 @@ export default function DepartmentsPage() {
   const updateMutation = useMutation({
     mutationFn: ({ id, values }: { id: string; values: CreateDepartmentFormValues }) =>
       updateDepartmentApi(id, values),
-    onSuccess: (result) => {
+    onSuccess: (result, variables) => {
       if (result.ok) {
         setEditingDepartment(null);
-        queryClient.invalidateQueries({ queryKey: DEPARTMENTS_QUERY_KEY });
+        queryClient.setQueryData<Department[]>(DEPARTMENTS_QUERY_KEY, (old) => {
+          if (!old) return old;
+          return old.map((d) =>
+            d.id === variables.id
+              ? {
+                  ...d,
+                  name: variables.values.name,
+                  status: variables.values.status === "Active",
+                }
+              : d
+          );
+        });
       } else {
         if (result.status === 401) router.push("/login");
         else editForm.setError("root", { message: result.error });

@@ -226,7 +226,7 @@ export default function OutletPage() {
                 <span className="label">Manager ID</span>
                 <input
                   className="input"
-                  defaultValue={outlet.managerId}
+                  value={outlet.managerId}
                   readOnly
                 />
               </label>
@@ -235,7 +235,7 @@ export default function OutletPage() {
                 <span className="label">Contact</span>
                 <input
                   className="input"
-                  defaultValue={outlet.contact}
+                  value={outlet.contact}
                   readOnly
                 />
               </label>
@@ -244,7 +244,7 @@ export default function OutletPage() {
                 <span className="label">Status</span>
                 <select
                   className="select"
-                  defaultValue={outlet.status ? "Active" : "Inactive"}
+                  value={outlet.status ? "Active" : "Inactive"}
                   disabled
                   aria-readonly="true"
                 >
