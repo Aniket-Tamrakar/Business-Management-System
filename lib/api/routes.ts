@@ -27,3 +27,10 @@ export const PRODUCT_TYPE_ROUTES = {
   UPDATE: "/product-types/update",
   DELETE: "/product-types/delete",
 } as const;
+
+export const PRODUCT_ROUTES = {
+  GET: "/products/get",
+  CREATE: "/products/create",
+  UPDATE: "/products/update",
+  DELETE: "/products/delete",
+} as const;

@@ -51,9 +51,10 @@ const sidebarConfig = {
           menu: {
             title: "Product",
             items: [
+              { label: "Products", href: "/dashboard/product" },
               { label: "Product Type", href: "/dashboard/product/productType" },
-              { label: "Returns", href: "/dashboard/orders/returns" },
-              { label: "Shipments", href: "/dashboard/orders/shipments" },
+              { label: "Live", href: "/dashboard/orders/live" },
+              { label: "Processed", href: "/dashboard/orders/processed" },
             ],
           },
         },
