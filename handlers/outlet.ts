@@ -55,6 +55,26 @@ export async function createOutlet(payload: CreateOutletFormValues) {
   });
 }
 
+export type UpdateOutletPayload = {
+  id: string;
+  name: string;
+  contact: string;
+  status: boolean;
+};
+
+export type UpdateOutletResponse = {
+  success?: boolean;
+  message?: string;
+  [key: string]: unknown;
+};
+
+export async function updateOutlet(payload: UpdateOutletPayload) {
+  return apiRequest<UpdateOutletResponse>(OUTLET_ROUTES.UPDATE, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export type DeleteOutletResponse = {
   success?: boolean;
   message?: string;

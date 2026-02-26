@@ -11,6 +11,7 @@ export const AUTH_ROUTES = {
 export const OUTLET_ROUTES = {
   GET: "/outlets/get",
   CREATE: "/outlets/create",
+  UPDATE: "/outlets/update",
   DELETE: "/outlets/delete",
 } as const;
 
@@ -33,4 +34,11 @@ export const PRODUCT_ROUTES = {
   CREATE: "/products/create",
   UPDATE: "/products/update",
   DELETE: "/products/delete",
+} as const;
+
+export const ROLE_ROUTES = {
+  GET: "/roles/get",
+  CREATE: "/roles/create",
+  UPDATE: "/roles/update",
+  DELETE: "/roles/delete",
 } as const;

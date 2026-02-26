@@ -275,6 +275,9 @@ export default function OutletPage() {
           isOpen={Boolean(selectedOutletId)}
           outlet={selectedOutlet}
           onClose={closeEditModal}
+          onSuccess={() =>
+            queryClient.invalidateQueries({ queryKey: OUTLETS_QUERY_KEY })
+          }
         />
       )}
 

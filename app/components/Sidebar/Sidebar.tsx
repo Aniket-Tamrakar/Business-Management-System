@@ -67,6 +67,7 @@ const sidebarConfig = {
             items: [
               { label: "Users", href: "/dashboard/accounts/users" },
               { label: "Roles", href: "/dashboard/accounts/roles" },
+              { label: "Create role", href: "/dashboard/accounts/roles/create" },
               { label: "Permissions", href: "/dashboard/accounts/permissions" },
             ],
           },
