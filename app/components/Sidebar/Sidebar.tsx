@@ -53,8 +53,8 @@ const sidebarConfig = {
             items: [
               { label: "Products", href: "/dashboard/product" },
               { label: "Product Type", href: "/dashboard/product/productType" },
-              { label: "Live", href: "/dashboard/orders/live" },
-              { label: "Processed", href: "/dashboard/orders/processed" },
+              { label: "Live", href: "/dashboard/product/liveProduct" },
+              { label: "Processed", href: "/dashboard/product/processedProduct" },
             ],
           },
         },

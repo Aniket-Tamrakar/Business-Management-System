@@ -105,7 +105,7 @@ export async function updateProduct(
 
 export async function deleteProduct(id: string) {
   return apiRequest<DeleteProductResponse>(PRODUCT_ROUTES.DELETE, {
-    method: "POST",
+    method: "DELETE",
     body: JSON.stringify({ id }),
   });
 }
