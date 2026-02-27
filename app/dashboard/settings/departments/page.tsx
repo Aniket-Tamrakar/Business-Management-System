@@ -3,11 +3,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { usePermissions } from "@/app/providers/AuthProvider";
+import Pagination from "@/app/components/Pagination/Pagination";
 import ConfirmModal from "../../../components/Modal/ConfirmModal";
 import Modal from "../../../components/Modal/Modal";
+import { usePagination, paginate } from "@/app/hooks/usePagination";
 import {
   createDepartment as createDepartmentApi,
   deleteDepartment as deleteDepartmentApi,
@@ -169,8 +171,26 @@ export default function DepartmentsPage() {
   const addLoading = addForm.formState.isSubmitting || createMutation.isPending;
   const editLoading = editForm.formState.isSubmitting || updateMutation.isPending;
 
-  const filteredDepartments = departments.filter((d) =>
-    d.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+  const filteredDepartments = useMemo(
+    () =>
+      departments.filter((d) =>
+        d.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+      ),
+    [departments, searchQuery]
+  );
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    startIndex,
+    endIndex,
+  } = usePagination(filteredDepartments.length, { defaultPageSize: 10 });
+  const paginatedDepartments = useMemo(
+    () => paginate(filteredDepartments, startIndex, endIndex),
+    [filteredDepartments, startIndex, endIndex]
   );
 
   return (
@@ -257,7 +277,7 @@ export default function DepartmentsPage() {
           )}
         {!departmentsLoading &&
           !departmentsError &&
-          filteredDepartments.map((department) => (
+          paginatedDepartments.map((department) => (
             <div key={department.id} className="departmentsRow">
               <span>{department.name}</span>
               <span>
@@ -322,6 +342,18 @@ export default function DepartmentsPage() {
             </div>
           ))}
       </div>
+
+      {!departmentsLoading && !departmentsError && filteredDepartments.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredDepartments.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 20, 50]}
+          onPageSizeChange={setPageSize}
+        />
+      )}
 
       <ConfirmModal
         isOpen={!!departmentToDelete}

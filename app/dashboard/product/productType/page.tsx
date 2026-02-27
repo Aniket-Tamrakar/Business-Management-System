@@ -3,10 +3,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import Pagination from "@/app/components/Pagination/Pagination";
 import ConfirmModal from "../../../components/Modal/ConfirmModal";
 import Modal from "../../../components/Modal/Modal";
+import { usePagination, paginate } from "@/app/hooks/usePagination";
 import {
   createProductType as createProductTypeApi,
   deleteProductType as deleteProductTypeApi,
@@ -61,6 +63,20 @@ export default function ProductTypePage() {
     (pt) => pt.id === selectedProductTypeId
   );
   const closeEditModal = () => setSelectedProductTypeId(null);
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    startIndex,
+    endIndex,
+  } = usePagination(productTypes.length, { defaultPageSize: 10 });
+  const paginatedProductTypes = useMemo(
+    () => paginate(productTypes, startIndex, endIndex),
+    [productTypes, startIndex, endIndex]
+  );
 
   const {
     register,
@@ -222,7 +238,7 @@ export default function ProductTypePage() {
           )}
         {!productTypesLoading &&
           !productTypesError &&
-          productTypes.map((productType) => (
+          paginatedProductTypes.map((productType) => (
             <article key={productType.id} className="card">
               <div className="cardTop">
                 <div className="cardTitleBlock">
@@ -310,6 +326,18 @@ export default function ProductTypePage() {
             </article>
           ))}
       </div>
+
+      {!productTypesLoading && !productTypesError && productTypes.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={productTypes.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 20, 50]}
+          onPageSizeChange={setPageSize}
+        />
+      )}
 
       {selectedProductType && (
         <ProductTypeEditModal

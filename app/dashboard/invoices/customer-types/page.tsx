@@ -3,11 +3,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { usePermissions } from "@/app/providers/AuthProvider";
+import Pagination from "@/app/components/Pagination/Pagination";
 import ConfirmModal from "../../../components/Modal/ConfirmModal";
 import Modal from "../../../components/Modal/Modal";
+import { usePagination, paginate } from "@/app/hooks/usePagination";
 import {
   createCustomerType as createCustomerTypeApi,
   deleteCustomerType as deleteCustomerTypeApi,
@@ -166,8 +168,26 @@ export default function CustomerTypesPage() {
   const editLoading =
     editForm.formState.isSubmitting || updateMutation.isPending;
 
-  const filteredItems = items.filter((ct) =>
-    ct.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+  const filteredItems = useMemo(
+    () =>
+      items.filter((ct) =>
+        ct.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+      ),
+    [items, searchQuery]
+  );
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    startIndex,
+    endIndex,
+  } = usePagination(filteredItems.length, { defaultPageSize: 10 });
+  const paginatedItems = useMemo(
+    () => paginate(filteredItems, startIndex, endIndex),
+    [filteredItems, startIndex, endIndex]
   );
 
   return (
@@ -252,7 +272,7 @@ export default function CustomerTypesPage() {
           )}
         {!itemsLoading &&
           !itemsError &&
-          filteredItems.map((ct) => (
+          paginatedItems.map((ct) => (
             <div key={ct.id} className="customerTypesRow">
               <span>{ct.name}</span>
               <span>
@@ -313,6 +333,18 @@ export default function CustomerTypesPage() {
             </div>
           ))}
       </div>
+
+      {!itemsLoading && !itemsError && filteredItems.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredItems.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 20, 50]}
+          onPageSizeChange={setPageSize}
+        />
+      )}
 
       <ConfirmModal
         isOpen={!!itemToDelete}

@@ -3,11 +3,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { usePermissions } from "@/app/providers/AuthProvider";
+import Pagination from "@/app/components/Pagination/Pagination";
 import ConfirmModal from "../../../components/Modal/ConfirmModal";
 import Modal from "../../../components/Modal/Modal";
+import { usePagination, paginate } from "@/app/hooks/usePagination";
 import {
   createOutlet as createOutletApi,
   deleteOutlet as deleteOutletApi,
@@ -137,6 +139,20 @@ export default function OutletPage() {
 
   const loading = isSubmitting || createMutation.isPending;
 
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    startIndex,
+    endIndex,
+  } = usePagination(outlets.length, { defaultPageSize: 10 });
+  const paginatedOutlets = useMemo(
+    () => paginate(outlets, startIndex, endIndex),
+    [outlets, startIndex, endIndex]
+  );
+
   return (
     <section className="outletPage">
       <div className="breadcrumb">
@@ -177,7 +193,7 @@ export default function OutletPage() {
         )}
         {!outletsLoading &&
           !outletsError &&
-          outlets.map((outlet) => (
+          paginatedOutlets.map((outlet) => (
           <article key={outlet.id} className="card">
             <div className="cardTop">
               <div className="cardTitleBlock">
@@ -277,6 +293,18 @@ export default function OutletPage() {
           </article>
           ))}
       </div>
+
+      {!outletsLoading && !outletsError && outlets.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={outlets.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 20, 50]}
+          onPageSizeChange={setPageSize}
+        />
+      )}
 
       {selectedOutlet && (
         <OutletEditModal

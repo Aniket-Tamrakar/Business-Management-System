@@ -42,6 +42,7 @@ export type CreateUserPayload = {
   outletId: string;
   status: boolean;
   email: string;
+  contact?: string;
 };
 
 export type CreateUserResponse = {
@@ -58,6 +59,7 @@ export async function createUser(payload: CreateUserFormValues) {
     status: payload.status === "Active",
     email: payload.email.trim().toLowerCase(),
   };
+  if (payload.contact?.trim()) body.contact = payload.contact.trim();
   return apiRequest<CreateUserResponse>(USER_ROUTES.CREATE, {
     method: "POST",
     body: JSON.stringify(body),

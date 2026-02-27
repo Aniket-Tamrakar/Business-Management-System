@@ -4,11 +4,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { usePermissions } from "@/app/providers/AuthProvider";
+import Pagination from "@/app/components/Pagination/Pagination";
 import ConfirmModal from "../../../components/Modal/ConfirmModal";
 import Modal from "../../../components/Modal/Modal";
+import { usePagination, paginate } from "@/app/hooks/usePagination";
 import {
   deleteRole as deleteRoleApi,
   getRoles,
@@ -129,8 +131,26 @@ export default function RolesPage() {
   const editLoading =
     editForm.formState.isSubmitting || updateMutation.isPending;
 
-  const filteredRoles = roles.filter((r) =>
-    r.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+  const filteredRoles = useMemo(
+    () =>
+      roles.filter((r) =>
+        r.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+      ),
+    [roles, searchQuery]
+  );
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    startIndex,
+    endIndex,
+  } = usePagination(filteredRoles.length, { defaultPageSize: 10 });
+  const paginatedRoles = useMemo(
+    () => paginate(filteredRoles, startIndex, endIndex),
+    [filteredRoles, startIndex, endIndex]
   );
 
   return (
@@ -209,7 +229,7 @@ export default function RolesPage() {
           )}
         {!rolesLoading &&
           !rolesError &&
-          filteredRoles.map((role) => (
+          paginatedRoles.map((role) => (
             <div key={role.id} className="rolesRow">
               <span>{role.name}</span>
               <div
@@ -263,6 +283,18 @@ export default function RolesPage() {
             </div>
           ))}
       </div>
+
+      {!rolesLoading && !rolesError && filteredRoles.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredRoles.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 20, 50]}
+          onPageSizeChange={setPageSize}
+        />
+      )}
 
       <ConfirmModal
         isOpen={!!roleToDelete}

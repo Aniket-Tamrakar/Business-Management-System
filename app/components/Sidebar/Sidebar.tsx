@@ -60,9 +60,10 @@ const sidebarConfig = {
             items: [
               { label: "Products", href: "/dashboard/product" },
               { label: "Product Type", href: "/dashboard/product/productType" },
+              { label: "Pricelist", href: "/dashboard/settings/dualPricing" },
+
               { label: "Live", href: "/dashboard/product/liveProduct" },
               { label: "Processed", href: "/dashboard/product/processedProduct" },
-              { label: "Pricelist", href: "/dashboard/settings/dualPricing" },
 
             ] as MenuItem[],
           },

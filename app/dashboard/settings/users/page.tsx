@@ -3,10 +3,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { usePermissions } from "@/app/providers/AuthProvider";
+import Pagination from "@/app/components/Pagination/Pagination";
 import Modal from "../../../components/Modal/Modal";
+import { usePagination, paginate } from "@/app/hooks/usePagination";
 import { getRoles } from "@/handlers/role";
 import {
   createUser as createUserApi,
@@ -24,6 +26,7 @@ const defaultFormValues: CreateUserFormValues = {
   email: "",
   roleId: "",
   status: "Active",
+  contact: "",
 };
 
 
@@ -33,8 +36,6 @@ export default function UsersPage() {
   const { canCreate } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
-  console.log("userPermissions", usePermissions());
 
   const {
     data: users = [],
@@ -116,10 +117,28 @@ export default function UsersPage() {
     return role?.name ?? user.roleId ?? "—";
   };
 
-  const filteredUsers = users.filter(
-    (u) =>
-      u.fullName?.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
-      u.email?.toLowerCase().includes(searchQuery.trim().toLowerCase())
+  const filteredUsers = useMemo(
+    () =>
+      users.filter(
+        (u) =>
+          u.fullName?.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
+          u.email?.toLowerCase().includes(searchQuery.trim().toLowerCase())
+      ),
+    [users, searchQuery]
+  );
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    startIndex,
+    endIndex,
+  } = usePagination(filteredUsers.length, { defaultPageSize: 10 });
+  const paginatedUsers = useMemo(
+    () => paginate(filteredUsers, startIndex, endIndex),
+    [filteredUsers, startIndex, endIndex]
   );
 
   return (
@@ -215,7 +234,7 @@ export default function UsersPage() {
           )}
         {!usersLoading &&
           !usersError &&
-          filteredUsers.map((user) => (
+          paginatedUsers.map((user) => (
             <div key={user.id} className="usersRow">
               <span>{user.id}</span>
               <span>{user.fullName ?? "—"}</span>
@@ -232,6 +251,18 @@ export default function UsersPage() {
             </div>
           ))}
       </div>
+
+      {!usersLoading && !usersError && filteredUsers.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredUsers.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 20, 50]}
+          onPageSizeChange={setPageSize}
+        />
+      )}
 
       <Modal
         isOpen={isModalOpen}
@@ -289,6 +320,18 @@ export default function UsersPage() {
             />
             {errors.email && (
               <span className="usersFieldError">{errors.email.message}</span>
+            )}
+          </label>
+          <label className="modalField">
+            <span className="label">Contact</span>
+            <input
+              className="input"
+              type="text"
+              placeholder="e.g. +91 9876543210"
+              {...register("contact")}
+            />
+            {errors.contact && (
+              <span className="usersFieldError">{errors.contact.message}</span>
             )}
           </label>
           <label className="modalField">

@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { AuthProvider } from "@/app/providers/AuthProvider";
+import ToastProvider from "@/app/providers/ToastProvider";
 import Sidebar from "./Sidebar/Sidebar";
 import "./Sidebar/Sidebar.scss";
 
@@ -19,12 +20,14 @@ export default function LayoutWrapper({
 
   return (
     <AuthProvider>
-      <div className="flex min-h-screen w-full">
-        <Sidebar />
-        <main className="flex min-h-screen flex-1 flex-col items-center justify-between  bg-white px-8 pt-8 pb-[7px] dark:bg-black sm:items-start">
-          {children}
-        </main>
-      </div>
+      <ToastProvider>
+        <div className="flex min-h-screen w-full">
+          <Sidebar />
+          <main className="flex h-screen flex-1 flex-col items-center overflow-y-auto bg-white px-8 pt-8 pb-[7px] dark:bg-black sm:items-start">
+            {children}
+          </main>
+        </div>
+      </ToastProvider>
     </AuthProvider>
   );
 }

@@ -5,8 +5,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import Pagination from "../../components/Pagination/Pagination";
 import ConfirmModal from "../../components/Modal/ConfirmModal";
 import Modal from "../../components/Modal/Modal";
+import { usePagination, paginate } from "@/app/hooks/usePagination";
 import {
   createProduct as createProductApi,
   deleteProduct as deleteProductApi,
@@ -109,6 +111,26 @@ export default function ProductPage() {
 
   const selectedProduct = products.find((p) => p.id === selectedProductId);
   const closeEditModal = () => setSelectedProductId(null);
+
+  const getProductTypeName = (p: Product) =>
+    (typeof p.productType === "object" && p.productType?.name) ||
+    productTypes.find((pt) => pt.id === p.productTypeId)?.name ||
+    p.productTypeId;
+  const getOutletName = (p: Product) =>
+    (typeof p.outlet === "object" && p.outlet?.name) ||
+    outlets.find((o) => o.id === p.outletId)?.name ||
+    p.outletId;
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    startIndex,
+    endIndex,
+  } = usePagination(products.length, { defaultPageSize: 10 });
+  const paginatedProducts = paginate(products, startIndex, endIndex);
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteProductApi(id),
@@ -239,7 +261,7 @@ export default function ProductPage() {
         )}
         {!productsLoading &&
           !productsError &&
-          products.map((product: Product) => (
+          paginatedProducts.map((product: Product) => (
             <article key={product.id} className="card">
               <div className="cardTop">
                 <div className="cardTitleBlock">
@@ -293,18 +315,18 @@ export default function ProductPage() {
 
               <div className="cardBody">
                 <label className="field">
-                  <span className="label">Product Type ID</span>
+                  <span className="label">Product Type</span>
                   <input
                     className="input"
-                    value={product.productTypeId}
+                    value={getProductTypeName(product)}
                     readOnly
                   />
                 </label>
                 <label className="field">
-                  <span className="label">Outlet ID</span>
+                  <span className="label">Outlet</span>
                   <input
                     className="input"
-                    value={product.outletId}
+                    value={getOutletName(product)}
                     readOnly
                   />
                 </label>
@@ -331,6 +353,18 @@ export default function ProductPage() {
             </article>
           ))}
       </div>
+
+      {!productsLoading && !productsError && products.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={products.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 20, 50]}
+          onPageSizeChange={setPageSize}
+        />
+      )}
 
       {selectedProduct && (
         <ProductEditModal

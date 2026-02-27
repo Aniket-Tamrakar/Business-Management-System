@@ -3,7 +3,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import Pagination from "@/app/components/Pagination/Pagination";
 import Modal from "@/app/components/Modal/Modal";
+import { usePagination, paginate } from "@/app/hooks/usePagination";
 import { getProducts, restockProduct, deductProduct, type Product } from "@/handlers/product";
 import { getOutlets } from "@/handlers/outlet";
 import { getProductTypes } from "@/handlers/productType";
@@ -80,6 +82,20 @@ export default function LiveProductPage() {
 
   const getOutletName = (outletId: string) => outlets.find((o) => o.id === outletId)?.name ?? outletId;
   const getTypeName = (typeId: string) => productTypes.find((pt) => pt.id === typeId)?.name ?? typeId;
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    startIndex,
+    endIndex,
+  } = usePagination(filteredProducts.length, { defaultPageSize: 10 });
+  const paginatedProducts = useMemo(
+    () => paginate(filteredProducts, startIndex, endIndex),
+    [filteredProducts, startIndex, endIndex]
+  );
 
   const restockMutation = useMutation({
     mutationFn: restockProduct,
@@ -213,7 +229,7 @@ export default function LiveProductPage() {
         {!productsLoading &&
           !productsError &&
           filteredProducts.length > 0 &&
-          filteredProducts.map((product) => (
+          paginatedProducts.map((product) => (
             <div key={product.id} className="productsRow">
               <span>{product.name}</span>
               <span>{getTypeName(product.productTypeId)}</span>
@@ -243,6 +259,18 @@ export default function LiveProductPage() {
             </div>
           ))}
       </div>
+
+      {!productsLoading && !productsError && filteredProducts.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredProducts.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 20, 50]}
+          onPageSizeChange={setPageSize}
+        />
+      )}
 
       <Modal
         isOpen={!!actionModal}

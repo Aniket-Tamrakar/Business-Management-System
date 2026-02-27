@@ -10,6 +10,10 @@ export type Product = {
   quantity: number;
   status: boolean;
   createdBy?: string;
+  productType?: { id?: string; name?: string };
+  outlet?: { id?: string; name?: string };
+  weight?: number | null;
+  stockStatus?: string;
   [key: string]: unknown;
 };
 

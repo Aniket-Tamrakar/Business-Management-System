@@ -2,8 +2,10 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import Pagination from "@/app/components/Pagination/Pagination";
 import Modal from "@/app/components/Modal/Modal";
+import { usePagination, paginate } from "@/app/hooks/usePagination";
 import { getSales, type SaleTransaction } from "@/handlers/sale";
 import { getOutlets } from "@/handlers/outlet";
 import "./transaction.scss";
@@ -99,20 +101,38 @@ export default function TransactionPage() {
     },
   });
 
-  const filteredTransactions = transactions.filter((tx) => {
-    const q = searchQuery.trim().toLowerCase();
-    if (q) {
-      const match =
-        getTransactionId(tx).toLowerCase().includes(q) ||
-        getCustomerName(tx).toLowerCase().includes(q) ||
-        getType(tx).toLowerCase().includes(q) ||
-        getAmount(tx).toLowerCase().includes(q);
-      if (!match) return false;
-    }
-    if (outletFilter && tx.outletId && tx.outletId !== outletFilter)
-      return false;
-    return true;
-  });
+  const filteredTransactions = useMemo(
+    () =>
+      transactions.filter((tx) => {
+        const q = searchQuery.trim().toLowerCase();
+        if (q) {
+          const match =
+            getTransactionId(tx).toLowerCase().includes(q) ||
+            getCustomerName(tx).toLowerCase().includes(q) ||
+            getType(tx).toLowerCase().includes(q) ||
+            getAmount(tx).toLowerCase().includes(q);
+          if (!match) return false;
+        }
+        if (outletFilter && tx.outletId && tx.outletId !== outletFilter)
+          return false;
+        return true;
+      }),
+    [transactions, searchQuery, outletFilter]
+  );
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    startIndex,
+    endIndex,
+  } = usePagination(filteredTransactions.length, { defaultPageSize: 10 });
+  const paginatedTransactions = useMemo(
+    () => paginate(filteredTransactions, startIndex, endIndex),
+    [filteredTransactions, startIndex, endIndex]
+  );
 
   return (
     <section className="transactionPage">
@@ -225,7 +245,7 @@ export default function TransactionPage() {
           )}
         {!salesLoading &&
           !salesError &&
-          filteredTransactions.map((tx) => (
+          paginatedTransactions.map((tx) => (
             <div
               key={tx.id}
               className="transactionRow transactionRowClickable"
@@ -267,6 +287,18 @@ export default function TransactionPage() {
             </div>
           ))}
       </div>
+
+      {!salesLoading && !salesError && filteredTransactions.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredTransactions.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 20, 50]}
+          onPageSizeChange={setPageSize}
+        />
+      )}
 
       <Modal
         isOpen={!!selectedTransaction}

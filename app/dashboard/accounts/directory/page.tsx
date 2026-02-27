@@ -3,10 +3,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { usePermissions } from "@/app/providers/AuthProvider";
+import Pagination from "@/app/components/Pagination/Pagination";
 import Modal from "../../../components/Modal/Modal";
+import { usePagination, paginate } from "@/app/hooks/usePagination";
 import {
   createEmployee as createEmployeeApi,
   getEmployees,
@@ -151,24 +153,42 @@ export default function DirectoryPage() {
     return departments.find((d) => d.id === emp.departmentId)?.name ?? "—";
   };
 
-  const filteredEmployees = employees.filter((emp) => {
-    const q = searchQuery.trim().toLowerCase();
-    if (q) {
-      const match =
-        emp.employeeId.toLowerCase().includes(q) ||
-        emp.iot.toLowerCase().includes(q) ||
-        emp.name.toLowerCase().includes(q) ||
-        getRoleName(emp).toLowerCase().includes(q) ||
-        getDepartmentName(emp).toLowerCase().includes(q) ||
-        emp.contact.toLowerCase().includes(q) ||
-        (emp.email && emp.email.toLowerCase().includes(q));
-      if (!match) return false;
-    }
-    if (departmentFilter) {
-      if (emp.departmentId !== departmentFilter) return false;
-    }
-    return true;
-  });
+  const filteredEmployees = useMemo(
+    () =>
+      employees.filter((emp) => {
+        const q = searchQuery.trim().toLowerCase();
+        if (q) {
+          const match =
+            emp.employeeId.toLowerCase().includes(q) ||
+            emp.iot.toLowerCase().includes(q) ||
+            emp.name.toLowerCase().includes(q) ||
+            getRoleName(emp).toLowerCase().includes(q) ||
+            getDepartmentName(emp).toLowerCase().includes(q) ||
+            emp.contact.toLowerCase().includes(q) ||
+            (emp.email && emp.email.toLowerCase().includes(q));
+          if (!match) return false;
+        }
+        if (departmentFilter) {
+          if (emp.departmentId !== departmentFilter) return false;
+        }
+        return true;
+      }),
+    [employees, searchQuery, departmentFilter]
+  );
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    startIndex,
+    endIndex,
+  } = usePagination(filteredEmployees.length, { defaultPageSize: 10 });
+  const paginatedEmployees = useMemo(
+    () => paginate(filteredEmployees, startIndex, endIndex),
+    [filteredEmployees, startIndex, endIndex]
+  );
 
   const createMutation = useMutation({
     mutationFn: (values: CreateEmployeeFormValues) => createEmployeeApi(values),
@@ -296,7 +316,7 @@ export default function DirectoryPage() {
           )}
         {!employeesLoading &&
           !employeesError &&
-          filteredEmployees.map((emp) => (
+          paginatedEmployees.map((emp) => (
             <div key={emp.id} className="directoryRow">
               <span>{emp.employeeId}</span>
               <span>{emp.iot}</span>
@@ -338,6 +358,18 @@ export default function DirectoryPage() {
             </div>
           ))}
       </div>
+
+      {!employeesLoading && !employeesError && filteredEmployees.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredEmployees.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 20, 50]}
+          onPageSizeChange={setPageSize}
+        />
+      )}
 
       <Modal
         isOpen={isModalOpen}

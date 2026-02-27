@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import ConfirmModal from "@/app/components/Modal/ConfirmModal";
+import { useToast } from "@/app/providers/ToastProvider";
 import { getCustomerTypes } from "@/handlers/customerType";
 import { getDualPricings } from "@/handlers/dualPricing";
 import { getOutlets } from "@/handlers/outlet";
@@ -42,6 +43,7 @@ function getUnitPrice(
 
 export default function PointOfSalePage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [customerName, setCustomerName] = useState("");
   const [customerContact, setCustomerContact] = useState("");
   const [outletId, setOutletId] = useState("");
@@ -156,10 +158,16 @@ export default function PointOfSalePage() {
         router.push("/dashboard/invoices/transaction");
       } else {
         if (result.status === 401) router.push("/login");
-        else setError(result.error);
+        else {
+          setError(result.error);
+          showToast(result.error, "error");
+        }
       }
     },
-    onError: () => setError("Something went wrong. Please try again."),
+    onError: () => {
+      setError("Something went wrong. Please try again.");
+      showToast("Something went wrong. Please try again.", "error");
+    },
   });
 
   const doCheckout = () => {
