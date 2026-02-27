@@ -183,6 +183,16 @@
   color: #dc2626;
 }
 
+.posLineTypeBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #eef2f7;
+  color: #6b7280;
+}
+
 .posTable tfoot td {
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   padding: 14px 16px;
@@ -199,10 +209,31 @@
   color: #111827;
 }
 
+.posAddMoreBtn {
+  width: 100%;
+  height: 44px;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  background: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.posAddMoreBtn:hover {
+  background: #f9fafb;
+  border-color: #02955a;
+  color: #02955a;
+}
+
 .posCheckoutBtn {
   width: 100%;
   height: 48px;
-  margin-top: 8px;
+  margin-top: 0;
   border: none;
   border-radius: 10px;
   font-size: 15px;

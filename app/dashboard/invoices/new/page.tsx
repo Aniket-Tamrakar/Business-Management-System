@@ -2,7 +2,8 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import ConfirmModal from "@/app/components/Modal/ConfirmModal";
 import { getCustomerTypes } from "@/handlers/customerType";
 import { getDualPricings } from "@/handlers/dualPricing";
 import { getOutlets } from "@/handlers/outlet";
@@ -22,6 +23,8 @@ type LineItem = {
   productName: string;
   weight: number;
   unitPrice: number;
+  customerTypeId: string;
+  typeName: string;
 };
 
 function getUnitPrice(
@@ -41,12 +44,14 @@ export default function PointOfSalePage() {
   const router = useRouter();
   const [customerName, setCustomerName] = useState("");
   const [customerContact, setCustomerContact] = useState("");
-  const [customerTypeId, setCustomerTypeId] = useState("");
   const [outletId, setOutletId] = useState("");
   const [productId, setProductId] = useState("");
+  const [lineTypeId, setLineTypeId] = useState("");
   const [weight, setWeight] = useState<number>(1);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [checkoutConfirmOpen, setCheckoutConfirmOpen] = useState(false);
+  const productSelectRef = useRef<HTMLSelectElement>(null);
 
   const { data: products = [] } = useQuery({
     queryKey: PRODUCTS_QUERY_KEY,
@@ -96,15 +101,18 @@ export default function PointOfSalePage() {
     },
   });
 
-  const selectedCustomerType = customerTypes.find((ct) => ct.id === customerTypeId);
-  const isWholesale = selectedCustomerType?.name?.toLowerCase().includes("wholesale") ?? false;
-
   const handleAddProduct = () => {
     if (!productId || !outletId) {
       setError("Select product and outlet.");
       return;
     }
+    if (!lineTypeId) {
+      setError("Select type (Retail/Wholesale) for this product.");
+      return;
+    }
     const product = products.find((p: Product) => p.id === productId);
+    const selectedType = customerTypes.find((ct) => ct.id === lineTypeId);
+    const isWholesale = selectedType?.name?.toLowerCase().includes("wholesale") ?? false;
     const unitPrice = getUnitPrice(
       dualPricings,
       productId,
@@ -118,6 +126,8 @@ export default function PointOfSalePage() {
         productName: product?.name ?? "—",
         weight: Number(weight) || 1,
         unitPrice,
+        customerTypeId: lineTypeId,
+        typeName: selectedType?.name ?? "—",
       },
     ]);
     setWeight(1);
@@ -152,6 +162,19 @@ export default function PointOfSalePage() {
     onError: () => setError("Something went wrong. Please try again."),
   });
 
+  const doCheckout = () => {
+    const items = lineItems.map((item) => ({
+      name: customerName.trim(),
+      contact: customerContact.trim(),
+      customerTypeId: item.customerTypeId,
+      productId: item.productId,
+      outletId,
+      weight: item.weight,
+    }));
+    createSaleMutation.mutate(items);
+    setCheckoutConfirmOpen(false);
+  };
+
   const handleCheckout = () => {
     if (!outletId || lineItems.length === 0) {
       setError("Add at least one product and select an outlet.");
@@ -161,19 +184,8 @@ export default function PointOfSalePage() {
       setError("Enter customer details.");
       return;
     }
-    if (!customerTypeId) {
-      setError("Select a customer type.");
-      return;
-    }
-    const items = lineItems.map((item) => ({
-      name: customerName.trim(),
-      contact: customerContact.trim(),
-      customerTypeId,
-      productId: item.productId,
-      outletId,
-      weight: item.weight,
-    }));
-    createSaleMutation.mutate(items);
+    setError(null);
+    setCheckoutConfirmOpen(true);
   };
 
   return (
@@ -219,22 +231,6 @@ export default function PointOfSalePage() {
 
         <div className="posFormRow">
           <label className="posField">
-            <span className="posLabel">Customer Type</span>
-            <select
-              className="posSelect"
-              value={customerTypeId}
-              onChange={(e) => setCustomerTypeId(e.target.value)}
-              aria-label="Customer type"
-            >
-              <option value="">Select customer type</option>
-              {customerTypes.map((ct) => (
-                <option key={ct.id} value={ct.id}>
-                  {ct.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="posField">
             <span className="posLabel">Outlet</span>
             <select
               className="posSelect"
@@ -256,6 +252,7 @@ export default function PointOfSalePage() {
           <label className="posField">
             <span className="posLabel">Product Name</span>
             <select
+              ref={productSelectRef}
               className="posSelect"
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
@@ -265,6 +262,22 @@ export default function PointOfSalePage() {
               {products.map((p: Product) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="posField">
+            <span className="posLabel">Type</span>
+            <select
+              className="posSelect"
+              value={lineTypeId}
+              onChange={(e) => setLineTypeId(e.target.value)}
+              aria-label="Price type for this line (Retail/Wholesale)"
+            >
+              <option value="">Retail / Wholesale</option>
+              {customerTypes.map((ct) => (
+                <option key={ct.id} value={ct.id}>
+                  {ct.name}
                 </option>
               ))}
             </select>
@@ -301,6 +314,7 @@ export default function PointOfSalePage() {
             <thead>
               <tr>
                 <th>PRODUCT NAME</th>
+                <th>TYPE</th>
                 <th>QTY/KG</th>
                 <th>SUB-TOTAL</th>
                 <th aria-label="Remove" />
@@ -309,14 +323,17 @@ export default function PointOfSalePage() {
             <tbody>
               {lineItems.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="posTableEmpty">
-                    No products added. Select product and quantity above.
+                  <td colSpan={5} className="posTableEmpty">
+                    No products added. Select product, type (Retail/Wholesale), and quantity above.
                   </td>
                 </tr>
               ) : (
                 lineItems.map((item, index) => (
                   <tr key={`${item.productId}-${index}`}>
                     <td>{item.productName}</td>
+                    <td>
+                      <span className="posLineTypeBadge">{item.typeName}</span>
+                    </td>
                     <td>{item.weight}</td>
                     <td>
                       {item.weight !== 1
@@ -340,7 +357,7 @@ export default function PointOfSalePage() {
             {lineItems.length > 0 && (
               <tfoot>
                 <tr>
-                  <td colSpan={2} className="posTotalLabel">
+                  <td colSpan={3} className="posTotalLabel">
                     Total
                   </td>
                   <td className="posTotalValue">{total}</td>
@@ -353,6 +370,14 @@ export default function PointOfSalePage() {
 
         <button
           type="button"
+          className="posAddMoreBtn"
+          onClick={() => productSelectRef.current?.focus()}
+        >
+          + Add more products
+        </button>
+
+        <button
+          type="button"
           className="posCheckoutBtn"
           onClick={handleCheckout}
           disabled={createSaleMutation.isPending || lineItems.length === 0}
@@ -360,6 +385,17 @@ export default function PointOfSalePage() {
           {createSaleMutation.isPending ? "Processing…" : "Checkout"}
         </button>
       </div>
+
+      <ConfirmModal
+        isOpen={checkoutConfirmOpen}
+        title="Confirm checkout"
+        message="Are you sure you want to checkout? This will complete the sale and add it to transactions."
+        confirmLabel="Checkout"
+        cancelLabel="Cancel"
+        loading={createSaleMutation.isPending}
+        onClose={() => setCheckoutConfirmOpen(false)}
+        onConfirm={doCheckout}
+      />
     </section>
   );
 }
