@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { usePermissions } from "@/app/providers/AuthProvider";
 import ConfirmModal from "../../../components/Modal/ConfirmModal";
 import Modal from "../../../components/Modal/Modal";
 import {
@@ -37,6 +38,7 @@ function toFormValues(d: Department): CreateDepartmentFormValues {
 export default function DepartmentsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { canCreate, canUpdate, canDelete } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [departmentToDelete, setDepartmentToDelete] = useState<Department | null>(null);
@@ -184,13 +186,15 @@ export default function DepartmentsPage() {
             Organize your team by departments for clarity
           </p>
         </div>
-        <button
-          type="button"
-          className="button buttonPrimary"
-          onClick={() => setIsModalOpen(true)}
-        >
-          Add Department
-        </button>
+        {canCreate && (
+          <button
+            type="button"
+            className="button buttonPrimary"
+            onClick={() => setIsModalOpen(true)}
+          >
+            Add Department
+          </button>
+        )}
       </div>
 
       <div className="departmentsSearch">
@@ -269,42 +273,50 @@ export default function DepartmentsPage() {
                 className="departmentsMenuWrap"
                 ref={openMenuId === department.id ? menuButtonRef : undefined}
               >
-                <button
-                  type="button"
-                  className="departmentsMenuTrigger"
-                  onClick={() =>
-                    setOpenMenuId((id) =>
-                      id === department.id ? null : department.id
-                    )
-                  }
-                  aria-label="More options"
-                  aria-expanded={openMenuId === department.id}
-                >
-                  ⋮
-                </button>
-                {openMenuId === department.id && (
-                  <div className="departmentsMenuDropdown">
+                {(canUpdate || canDelete) && (
+                  <>
                     <button
                       type="button"
-                      className="departmentsMenuItem"
-                      onClick={() => {
-                        setEditingDepartment(department);
-                        setOpenMenuId(null);
-                      }}
+                      className="departmentsMenuTrigger"
+                      onClick={() =>
+                        setOpenMenuId((id) =>
+                          id === department.id ? null : department.id
+                        )
+                      }
+                      aria-label="More options"
+                      aria-expanded={openMenuId === department.id}
                     >
-                      Edit
+                      ⋮
                     </button>
-                    <button
-                      type="button"
-                      className="departmentsMenuItem departmentsMenuItemDanger"
-                      onClick={() => {
-                        setDepartmentToDelete(department);
-                        setOpenMenuId(null);
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
+                    {openMenuId === department.id && (
+                      <div className="departmentsMenuDropdown">
+                        {canUpdate && (
+                          <button
+                            type="button"
+                            className="departmentsMenuItem"
+                            onClick={() => {
+                              setEditingDepartment(department);
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            type="button"
+                            className="departmentsMenuItem departmentsMenuItemDanger"
+                            onClick={() => {
+                              setDepartmentToDelete(department);
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

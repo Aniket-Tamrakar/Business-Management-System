@@ -47,3 +47,10 @@ export const USER_ROUTES = {
   GET: "/users/get",
   CREATE: "/users/create",
 } as const;
+
+export const DUAL_PRICING_ROUTES = {
+  GET: "/dual-pricing/get",
+  CREATE: "/dual-pricing/create",
+  UPDATE: "/dual-pricing/update",
+  DELETE: "/dual-pricing/delete",
+} as const;

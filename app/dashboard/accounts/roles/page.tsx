@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { usePermissions } from "@/app/providers/AuthProvider";
 import ConfirmModal from "../../../components/Modal/ConfirmModal";
 import Modal from "../../../components/Modal/Modal";
 import {
@@ -30,6 +31,7 @@ const ROLES_QUERY_KEY = ["roles"];
 export default function RolesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { canCreate, canUpdate, canDelete } = usePermissions();
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
@@ -144,12 +146,14 @@ export default function RolesPage() {
             Manage roles and permissions for your team
           </p>
         </div>
-        <Link
-          href="/dashboard/accounts/roles/create"
-          className="button buttonPrimary"
-        >
-          Create role
-        </Link>
+        {canCreate && (
+          <Link
+            href="/dashboard/accounts/roles/create"
+            className="button buttonPrimary"
+          >
+            Create role
+          </Link>
+        )}
       </div>
 
       <div className="rolesSearch">
@@ -212,40 +216,48 @@ export default function RolesPage() {
                 className="rolesMenuWrap"
                 ref={openMenuId === role.id ? menuButtonRef : undefined}
               >
-                <button
-                  type="button"
-                  className="rolesMenuTrigger"
-                  onClick={() =>
-                    setOpenMenuId((id) => (id === role.id ? null : role.id))
-                  }
-                  aria-label="More options"
-                  aria-expanded={openMenuId === role.id}
-                >
-                  ⋮
-                </button>
-                {openMenuId === role.id && (
-                  <div className="rolesMenuDropdown">
+                {(canUpdate || canDelete) && (
+                  <>
                     <button
                       type="button"
-                      className="rolesMenuItem"
-                      onClick={() => {
-                        setEditingRole(role);
-                        setOpenMenuId(null);
-                      }}
+                      className="rolesMenuTrigger"
+                      onClick={() =>
+                        setOpenMenuId((id) => (id === role.id ? null : role.id))
+                      }
+                      aria-label="More options"
+                      aria-expanded={openMenuId === role.id}
                     >
-                      Edit
+                      ⋮
                     </button>
-                    <button
-                      type="button"
-                      className="rolesMenuItem rolesMenuItemDanger"
-                      onClick={() => {
-                        setRoleToDelete(role);
-                        setOpenMenuId(null);
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
+                    {openMenuId === role.id && (
+                      <div className="rolesMenuDropdown">
+                        {canUpdate && (
+                          <button
+                            type="button"
+                            className="rolesMenuItem"
+                            onClick={() => {
+                              setEditingRole(role);
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            type="button"
+                            className="rolesMenuItem rolesMenuItemDanger"
+                            onClick={() => {
+                              setRoleToDelete(role);
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

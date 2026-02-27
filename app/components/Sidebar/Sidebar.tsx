@@ -8,13 +8,19 @@ import { FiUsers } from "react-icons/fi";
 import { IoBagHandleOutline } from "react-icons/io5";
 import { LuReceiptText, LuUserCog } from "react-icons/lu";
 import { TbLayoutDashboard } from "react-icons/tb";
+import { usePermissions } from "@/app/providers/AuthProvider";
 import { logout as logoutApi } from "@/handlers/auth";
 import { clearAuthToken } from "@/lib/auth/token";
 
+/** Menu link; permission "create" means link is shown only when user can create. */
+type MenuItem = {
+  label: string;
+  href: string;
+  permission?: "create";
+};
+
 const sidebarConfig = {
-  header: {
-    title: "BMS",
-  },
+  header: { title: "BMS" },
   sections: [
     {
       items: [
@@ -28,7 +34,7 @@ const sidebarConfig = {
               { label: "Overview", href: "/dashboard" },
               { label: "Analytics", href: "/dashboard/analytics" },
               { label: "Reports", href: "/dashboard/reports" },
-            ],
+            ] as MenuItem[],
           },
         },
         {
@@ -39,9 +45,9 @@ const sidebarConfig = {
             title: "Invoices",
             items: [
               { label: "All invoices", href: "/dashboard/invoices" },
-              { label: "Create invoice", href: "/dashboard/invoices/new" },
+              { label: "Create invoice", href: "/dashboard/invoices/new", permission: "create" as const },
               { label: "Recurring", href: "/dashboard/invoices/recurring" },
-            ],
+            ] as MenuItem[],
           },
         },
         {
@@ -55,7 +61,7 @@ const sidebarConfig = {
               { label: "Product Type", href: "/dashboard/product/productType" },
               { label: "Live", href: "/dashboard/product/liveProduct" },
               { label: "Processed", href: "/dashboard/product/processedProduct" },
-            ],
+            ] as MenuItem[],
           },
         },
         {
@@ -67,9 +73,9 @@ const sidebarConfig = {
             items: [
               { label: "Users", href: "/dashboard/accounts/users" },
               { label: "Roles", href: "/dashboard/accounts/roles" },
-              { label: "Create role", href: "/dashboard/accounts/roles/create" },
+              { label: "Create role", href: "/dashboard/accounts/roles/create", permission: "create" as const },
               { label: "Permissions", href: "/dashboard/accounts/permissions" },
-            ],
+            ] as MenuItem[],
           },
         },
       ],
@@ -88,7 +94,7 @@ const sidebarConfig = {
               { label: "Team members", href: "/dashboard/teams" },
               { label: "Invitations", href: "/dashboard/teams/invitations" },
               { label: "Access", href: "/dashboard/teams/access" },
-            ],
+            ] as MenuItem[],
           },
         },
         {
@@ -101,7 +107,8 @@ const sidebarConfig = {
               { label: "Outlets", href: "/dashboard/settings/outlet" },
               { label: "Users", href: "/dashboard/settings/users" },
               { label: "Departments", href: "/dashboard/settings/departments" },
-            ],
+              { label: "Dual pricing", href: "/dashboard/settings/dualPricing" },
+            ] as MenuItem[],
           },
         },
       ],
@@ -111,6 +118,7 @@ const sidebarConfig = {
 
 export default function Sidebar() {
   const router = useRouter();
+  const { canCreate } = usePermissions();
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const allItems = useMemo(
     () => [
@@ -187,11 +195,13 @@ export default function Sidebar() {
           </button>
         </div>
         <div className="drawerBody">
-          {activeMenu?.items.map((entry) => (
-            <Link key={entry.href} className="drawerItem" href={entry.href}>
-              {entry.label}
-            </Link>
-          ))}
+          {activeMenu?.items
+            .filter((entry) => (entry.permission === "create" ? canCreate : true))
+            .map((entry) => (
+              <Link key={entry.href} className="drawerItem" href={entry.href}>
+                {entry.label}
+              </Link>
+            ))}
         </div>
         <div className="drawerFooter">
           <button

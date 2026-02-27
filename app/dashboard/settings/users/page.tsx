@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { usePermissions } from "@/app/providers/AuthProvider";
 import Modal from "../../../components/Modal/Modal";
 import { getRoles } from "@/handlers/role";
 import {
@@ -25,11 +26,15 @@ const defaultFormValues: CreateUserFormValues = {
   status: "Active",
 };
 
+
 export default function UsersPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { canCreate } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  console.log("userPermissions", usePermissions());
 
   const {
     data: users = [],
@@ -128,13 +133,15 @@ export default function UsersPage() {
           <h1 className="pageTitle">User Management</h1>
           <p className="pageSubtitle">Manage system users and permissions</p>
         </div>
-        <button
-          type="button"
-          className="button buttonPrimary"
-          onClick={() => setIsModalOpen(true)}
-        >
-          Add User
-        </button>
+        {canCreate && (
+          <button
+            type="button"
+            className="button buttonPrimary"
+            onClick={() => setIsModalOpen(true)}
+          >
+            Add User
+          </button>
+        )}
       </div>
 
       <div className="usersSearch">

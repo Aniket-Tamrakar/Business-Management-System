@@ -4,7 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { usePermissions } from "@/app/providers/AuthProvider";
 import { createRole as createRoleApi } from "@/handlers/role";
 import { createRoleSchema, type CreateRoleFormValues } from "@/schema/role";
 import "./createRole.scss";
@@ -17,6 +19,13 @@ const defaultValues: CreateRoleFormValues = {
 export default function CreateRolePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { canCreate } = usePermissions();
+
+  useEffect(() => {
+    if (canCreate === false) {
+      router.replace("/dashboard/accounts/roles");
+    }
+  }, [canCreate, router]);
   const {
     register,
     handleSubmit,
@@ -52,6 +61,10 @@ export default function CreateRolePage() {
   };
 
   const loading = isSubmitting || createMutation.isPending;
+
+  if (canCreate === false) {
+    return null;
+  }
 
   return (
     <section className="createRolePage">

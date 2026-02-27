@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { usePermissions } from "@/app/providers/AuthProvider";
 import ConfirmModal from "../../../components/Modal/ConfirmModal";
 import Modal from "../../../components/Modal/Modal";
 import {
@@ -29,6 +30,7 @@ const defaultAddFormValues: CreateOutletFormValues = {
 export default function OutletPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { canCreate, canUpdate, canDelete } = usePermissions();
   const [selectedOutletId, setSelectedOutletId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -148,13 +150,15 @@ export default function OutletPage() {
             Manage processing plants, retail stores, and distribution centers
           </p>
         </div>
-        <button
-          type="button"
-          className="button buttonPrimary"
-          onClick={() => setIsAddModalOpen(true)}
-        >
-          Add Outlet
-        </button>
+        {canCreate && (
+          <button
+            type="button"
+            className="button buttonPrimary"
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            Add Outlet
+          </button>
+        )}
       </div>
 
       <div className="cardList">
@@ -188,36 +192,38 @@ export default function OutletPage() {
                 >
                   {outlet.status ? "Active" : "Inactive"}
                 </span>
-                <div
-                  className="cardMenuWrap"
-                  ref={openMenuId === outlet.id ? menuButtonRef : undefined}
-                >
-                  <button
-                    type="button"
-                    className="cardMenuTrigger"
-                    onClick={() =>
-                      setOpenMenuId((id) => (id === outlet.id ? null : outlet.id))
-                    }
-                    aria-label="More options"
-                    aria-expanded={openMenuId === outlet.id}
+                {canDelete && (
+                  <div
+                    className="cardMenuWrap"
+                    ref={openMenuId === outlet.id ? menuButtonRef : undefined}
                   >
-                    ⋮
-                  </button>
-                  {openMenuId === outlet.id && (
-                    <div className="cardMenuDropdown">
-                      <button
-                        type="button"
-                        className="cardMenuItem cardMenuItemDanger"
-                        onClick={() => {
-                          setOutletToDelete(outlet);
-                          setOpenMenuId(null);
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
+                    <button
+                      type="button"
+                      className="cardMenuTrigger"
+                      onClick={() =>
+                        setOpenMenuId((id) => (id === outlet.id ? null : outlet.id))
+                      }
+                      aria-label="More options"
+                      aria-expanded={openMenuId === outlet.id}
+                    >
+                      ⋮
+                    </button>
+                    {openMenuId === outlet.id && (
+                      <div className="cardMenuDropdown">
+                        <button
+                          type="button"
+                          className="cardMenuItem cardMenuItemDanger"
+                          onClick={() => {
+                            setOutletToDelete(outlet);
+                            setOpenMenuId(null);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -258,13 +264,15 @@ export default function OutletPage() {
               <button type="button" className="button">
                 View details
               </button>
-              <button
-                type="button"
-                className="button buttonPrimary"
-                onClick={() => setSelectedOutletId(outlet.id)}
-              >
-                Edit
-              </button>
+              {canUpdate && (
+                <button
+                  type="button"
+                  className="button buttonPrimary"
+                  onClick={() => setSelectedOutletId(outlet.id)}
+                >
+                  Edit
+                </button>
+              )}
             </div>
           </article>
           ))}
