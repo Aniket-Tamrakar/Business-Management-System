@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, type Resolver, type SubmitHandler } from "react-hook-form";
 import { usePermissions } from "@/app/providers/AuthProvider";
 import ConfirmModal from "../../../components/Modal/ConfirmModal";
@@ -60,11 +60,9 @@ export default function DualPricingPage() {
   const queryClient = useQueryClient();
   const { canCreate, canUpdate, canDelete } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<DualPricing | null>(null);
   const [editingItem, setEditingItem] = useState<DualPricing | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const menuButtonRef = useRef<HTMLDivElement>(null);
 
   const {
     data: items = [],
@@ -124,20 +122,6 @@ export default function DualPricingPage() {
   useEffect(() => {
     if (editingItem) editForm.reset(toFormValues(editingItem));
   }, [editingItem, editForm.reset]);
-
-  useEffect(() => {
-    if (!openMenuId) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        menuButtonRef.current &&
-        !menuButtonRef.current.contains(e.target as Node)
-      ) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [openMenuId]);
 
   const createMutation = useMutation({
     mutationFn: (values: DualPricingFormValues) =>
@@ -235,26 +219,33 @@ export default function DualPricingPage() {
     );
   });
 
+  const getMarginPercent = (retail: number, wholesale: number) => {
+    if (retail <= 0) return 0;
+    return Math.round(((retail - wholesale) / retail) * 1000) / 10;
+  };
+
+  const formatPrice = (value: number) => `Rs.${value}`;
+
   return (
     <section className="dualPricingPage">
       <div className="breadcrumb">
-        <span>Settings</span> {"›"} Dual pricing
+        <span>Sales & Billing</span> {"›"} Pricelist
       </div>
 
       <div className="dualPricingHeader">
         <div className="dualPricingHeaderText">
-          <h1 className="pageTitle">Dual pricing</h1>
+          <h1 className="pageTitle">Dual Pricing System</h1>
           <p className="pageSubtitle">
-            Manage wholesale and retail prices by product and outlet
+            Manage retail and wholesale pricing
           </p>
         </div>
         {canCreate && (
           <button
             type="button"
-            className="button buttonPrimary"
+            className="button buttonPrimary dualPricingUpgradeBtn"
             onClick={() => setIsModalOpen(true)}
           >
-            Add dual pricing
+            Upgrade Price
           </button>
         )}
       </div>
@@ -270,132 +261,87 @@ export default function DualPricingPage() {
         />
       </div>
 
-      <div className="dualPricingTable">
-        <div className="dualPricingRow dualPricingRowHeader">
-          <span>Product</span>
-          <span>Outlet</span>
-          <span>Wholesale</span>
-          <span>Retail</span>
-          <span>Status</span>
-          <span />
-        </div>
+      <div className="dualPricingCardGrid">
         {itemsLoading && (
-          <div className="dualPricingRow">
-            <span className="dualPricingMessage">Loading…</span>
-            <span />
-            <span />
-            <span />
-            <span />
-            <span />
-          </div>
+          <div className="dualPricingCardMessage">Loading…</div>
         )}
         {itemsError && (
-          <div className="dualPricingRow">
-            <span className="dualPricingMessage dualPricingError">
-              {itemsErrorDetail instanceof Error
-                ? itemsErrorDetail.message
-                : "Failed to load"}
-            </span>
-            <span />
-            <span />
-            <span />
-            <span />
-            <span />
+          <div className="dualPricingCardMessage dualPricingError">
+            {itemsErrorDetail instanceof Error
+              ? itemsErrorDetail.message
+              : "Failed to load"}
           </div>
         )}
         {!itemsLoading && !itemsError && items.length === 0 && (
-          <div className="dualPricingRow">
-            <span className="dualPricingMessage">
-              No dual pricing yet. Add one to get started.
-            </span>
-            <span />
-            <span />
-            <span />
-            <span />
-            <span />
+          <div className="dualPricingCardMessage">
+            No dual pricing yet. Add one to get started.
           </div>
         )}
         {!itemsLoading &&
           !itemsError &&
           items.length > 0 &&
           filteredItems.length === 0 && (
-            <div className="dualPricingRow">
-              <span className="dualPricingMessage">
-                No items match &quot;{searchQuery.trim()}&quot;.
-              </span>
-              <span />
-              <span />
-              <span />
-              <span />
-              <span />
+            <div className="dualPricingCardMessage">
+              No items match &quot;{searchQuery.trim()}&quot;.
             </div>
           )}
         {!itemsLoading &&
           !itemsError &&
           filteredItems.map((item) => (
-            <div key={item.id} className="dualPricingRow">
-              <span>{getProductName(item)}</span>
-              <span>{getOutletName(item)}</span>
-              <span>{item.wholesalePrice}</span>
-              <span>{item.retailPrice}</span>
-              <span>
-                <span
-                  className={
-                    item.status ? "badge badgeActive" : "badge"
-                  }
-                >
-                  {item.status ? "Active" : "Inactive"}
-                </span>
-              </span>
-              <div
-                className="dualPricingMenuWrap"
-                ref={openMenuId === item.id ? menuButtonRef : undefined}
-              >
+            <div key={item.id} className="dualPricingCard">
+              <div className="dualPricingCardTop">
+                <h3 className="dualPricingCardTitle">{getProductName(item)}</h3>
                 {(canUpdate || canDelete) && (
-                  <>
-                    <button
-                      type="button"
-                      className="dualPricingMenuTrigger"
-                      onClick={() =>
-                        setOpenMenuId((id) =>
-                          id === item.id ? null : item.id
-                        )
-                      }
-                      aria-label="More options"
-                      aria-expanded={openMenuId === item.id}
-                    >
-                      ⋮
-                    </button>
-                    {openMenuId === item.id && (
-                      <div className="dualPricingMenuDropdown">
-                        {canUpdate && (
-                          <button
-                            type="button"
-                            className="dualPricingMenuItem"
-                            onClick={() => {
-                              setEditingItem(item);
-                              setOpenMenuId(null);
-                            }}
-                          >
-                            Edit
-                          </button>
-                        )}
-                        {canDelete && (
-                          <button
-                            type="button"
-                            className="dualPricingMenuItem dualPricingMenuItemDanger"
-                            onClick={() => {
-                              setItemToDelete(item);
-                              setOpenMenuId(null);
-                            }}
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
+                  <div className="dualPricingCardActions">
+                    {canDelete && (
+                      <button
+                        type="button"
+                        className="dualPricingCardIconBtn"
+                        onClick={() => setItemToDelete(item)}
+                        aria-label="Delete"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <line x1="10" y1="11" x2="10" y2="17" />
+                          <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                      </button>
                     )}
-                  </>
+                    {canUpdate && (
+                      <button
+                        type="button"
+                        className="dualPricingCardIconBtn"
+                        onClick={() => setEditingItem(item)}
+                        aria-label="Edit"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 )}
+              </div>
+              <div className="dualPricingCardBody">
+                <p className="dualPricingCardRow">
+                  <span className="dualPricingCardLabel">Retail Price:</span>{" "}
+                  <span className="dualPricingCardValue">{formatPrice(item.retailPrice)}</span>
+                </p>
+                <p className="dualPricingCardRow">
+                  <span className="dualPricingCardLabel">Wholesale Price:</span>{" "}
+                  <span className="dualPricingCardValue">{formatPrice(item.wholesalePrice)}</span>
+                </p>
+              </div>
+              <div className="dualPricingCardFooter">
+                <span className="dualPricingCardMetric">
+                  Margin: {getMarginPercent(item.retailPrice, item.wholesalePrice)}%
+                </span>
+                <span className="dualPricingCardMetricDivider" />
+                <span className="dualPricingCardMetric">
+                  Cost: {formatPrice(item.wholesalePrice)}
+                </span>
               </div>
             </div>
           ))}

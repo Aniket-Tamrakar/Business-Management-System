@@ -67,6 +67,7 @@ export default function ConfirmModal({
           </button>
           <button
             type="button"
+            style={{ backgroundColor: isDanger ? "#D92D20" : "#000000", color: isDanger ? "#ffffff" : "#ffffff" }}
             className={`button modalButton ${isDanger ? "buttonDanger" : "buttonPrimary"}`}
             onClick={onConfirm}
             disabled={loading}

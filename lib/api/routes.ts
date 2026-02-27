@@ -54,3 +54,26 @@ export const DUAL_PRICING_ROUTES = {
   UPDATE: "/dual-pricing/update",
   DELETE: "/dual-pricing/delete",
 } as const;
+
+export const EMPLOYEE_ROUTES = {
+  GET: "/employees/get",
+  CREATE: "/employees/create",
+} as const;
+
+export const ATTENDANCE_ROUTES = {
+  CLOCK_IN: "/attendances/clock-in",
+  CLOCK_OUT: "/attendances/clock-out",
+} as const;
+
+export const SALES_ROUTES = {
+  GET: "/sales/get",
+  GET_BY_PRODUCT_ID: "/sales/get-by-product-id",
+  CREATE: "/sales/create",
+} as const;
+
+export const CUSTOMER_TYPE_ROUTES = {
+  GET: "/customer-types/get",
+  CREATE: "/customer-types/create",
+  UPDATE: "/customer-types/update",
+  DELETE: "/customer-types/delete",
+} as const;
