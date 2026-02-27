@@ -109,3 +109,30 @@ export async function deleteProduct(id: string) {
     body: JSON.stringify({ id }),
   });
 }
+
+export type RestockDeductPayload = {
+  id: string;
+  productTypeId: string;
+  outletId: string;
+  quantity: number;
+};
+
+export type RestockDeductResponse = {
+  success?: boolean;
+  message?: string;
+  [key: string]: unknown;
+};
+
+export async function restockProduct(payload: RestockDeductPayload) {
+  return apiRequest<RestockDeductResponse>(PRODUCT_ROUTES.RESTOCK, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deductProduct(payload: RestockDeductPayload) {
+  return apiRequest<RestockDeductResponse>(PRODUCT_ROUTES.DEDUCT, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

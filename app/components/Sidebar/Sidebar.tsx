@@ -73,7 +73,7 @@ const sidebarConfig = {
           menu: {
             title: "Accounts",
             items: [
-              { label: "Analytics", href: "/dashboard/accounts/users" },
+              { label: "Analytics", href: "/dashboard/accounts/analytics" },
               { label: "Clock In/Out", href: "/dashboard/accounts/clock-in-out" },
               { label: "Directory", href: "/dashboard/accounts/directory" },
             ] as MenuItem[],

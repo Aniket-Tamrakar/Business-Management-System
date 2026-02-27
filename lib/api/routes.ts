@@ -34,6 +34,8 @@ export const PRODUCT_ROUTES = {
   CREATE: "/products/create",
   UPDATE: "/products/update",
   DELETE: "/products/delete",
+  RESTOCK: "/products/restock",
+  DEDUCT: "/products/deduct",
 } as const;
 
 export const ROLE_ROUTES = {
