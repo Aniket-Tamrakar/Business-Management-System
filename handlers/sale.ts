@@ -7,7 +7,10 @@ export type SaleItemPayload = {
   customerTypeId: string;
   productId: string;
   outletId: string;
-  weight: number;
+  /** For Live products: weight in kg */
+  weight?: number;
+  /** For Processed products: quantity (units) */
+  quantity?: number;
 };
 
 /** Transaction/sale record for list view. API may return type/customerType/customer as { id, name }. */

@@ -16,11 +16,13 @@ import {
   getOutlets,
   type Outlet,
 } from "@/handlers/outlet";
+import { getUsers } from "@/handlers/user";
 import { createOutletSchema, type CreateOutletFormValues } from "@/schema/outlet";
 import "./outlet.scss";
 import OutletEditModal from "./OutletEditModal";
 
 const OUTLETS_QUERY_KEY = ["outlets"];
+const USERS_QUERY_KEY = ["users"];
 
 const defaultAddFormValues: CreateOutletFormValues = {
   name: "",
@@ -55,6 +57,31 @@ export default function OutletPage() {
       return result.data;
     },
   });
+
+  const { data: users = [] } = useQuery({
+    queryKey: USERS_QUERY_KEY,
+    queryFn: async () => {
+      const result = await getUsers();
+      if (!result.ok) {
+        if (result.status === 401) router.push("/login");
+        throw new Error(result.error);
+      }
+      return result.data;
+    },
+  });
+
+  const managers = useMemo(() => {
+    return users.filter((user) => {
+      const r = user.role;
+      const roleName =
+        typeof r === "object" && r != null && "name" in r && typeof (r as { name: string }).name === "string"
+          ? (r as { name: string }).name
+          : typeof r === "string"
+            ? r
+            : "";
+      return roleName.toLowerCase() === "manager";
+    });
+  }, [users]);
 
   const selectedOutlet = outlets.find(
     (outlet) => outlet.id === selectedOutletId
@@ -245,10 +272,14 @@ export default function OutletPage() {
 
             <div className="cardBody">
               <label className="field">
-                <span className="label">Manager ID</span>
+                <span className="label">Manager</span>
                 <input
                   className="input"
-                  value={outlet.managerId}
+                  value={
+                    users.find((u) => u.id === outlet.managerId)?.fullName ??
+                    users.find((u) => u.id === outlet.managerId)?.email ??
+                    outlet.managerId
+                  }
                   readOnly
                 />
               </label>
@@ -378,12 +409,15 @@ export default function OutletPage() {
             )}
           </label>
           <label className="modalField">
-            <span className="label">Manager ID (user UUID)</span>
-            <input
-              className="input"
-              placeholder="e.g. 601756be-54be-4623-8e97-7ff891e43081"
-              {...register("managerId")}
-            />
+            <span className="label">Manager</span>
+            <select className="select" {...register("managerId")}>
+              <option value="">Select manager</option>
+              {managers.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.fullName ?? user.email ?? user.id}
+                </option>
+              ))}
+            </select>
             {errors.managerId && (
               <span className="outletFieldError">
                 {errors.managerId.message}

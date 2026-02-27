@@ -1,13 +1,14 @@
 import { z } from "zod";
 
-const uuidSchema = z.string().uuid("Manager ID must be a valid UUID");
-
 export const createOutletSchema = z.object({
   name: z
     .string()
     .min(1, "Outlet name is required")
     .max(200, "Outlet name is too long"),
-  managerId: uuidSchema,
+  managerId: z
+    .string()
+    .min(1, "Manager is required")
+    .uuid("Manager must be selected"),
   contact: z
     .string()
     .min(1, "Contact is required")

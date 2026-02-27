@@ -9,12 +9,14 @@ import { getCustomerTypes } from "@/handlers/customerType";
 import { getDualPricings } from "@/handlers/dualPricing";
 import { getOutlets } from "@/handlers/outlet";
 import { getProducts } from "@/handlers/product";
+import { getProductTypes } from "@/handlers/productType";
 import { createSale } from "@/handlers/sale";
 import type { DualPricing } from "@/handlers/dualPricing";
 import type { Product } from "@/handlers/product";
 import "./pos.scss";
 
 const PRODUCTS_QUERY_KEY = ["products"];
+const PRODUCT_TYPES_QUERY_KEY = ["productTypes"];
 const OUTLETS_QUERY_KEY = ["outlets"];
 const DUAL_PRICING_QUERY_KEY = ["dualPricing"];
 const CUSTOMER_TYPES_QUERY_KEY = ["customerTypes"];
@@ -22,7 +24,11 @@ const CUSTOMER_TYPES_QUERY_KEY = ["customerTypes"];
 type LineItem = {
   productId: string;
   productName: string;
-  weight: number;
+  /** Live: weight in kg. Processed: undefined */
+  weight?: number;
+  /** Quantity: both for Live, only this for Processed */
+  quantity: number;
+  isLive: boolean;
   unitPrice: number;
   customerTypeId: string;
   typeName: string;
@@ -50,6 +56,7 @@ export default function PointOfSalePage() {
   const [productId, setProductId] = useState("");
   const [lineTypeId, setLineTypeId] = useState("");
   const [weight, setWeight] = useState<number>(1);
+  const [quantity, setQuantity] = useState<number>(1);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [checkoutConfirmOpen, setCheckoutConfirmOpen] = useState(false);
@@ -63,6 +70,15 @@ export default function PointOfSalePage() {
         if (result.status === 401) router.push("/login");
         throw new Error(result.error);
       }
+      return result.data;
+    },
+  });
+
+  const { data: productTypes = [] } = useQuery({
+    queryKey: PRODUCT_TYPES_QUERY_KEY,
+    queryFn: async () => {
+      const result = await getProductTypes();
+      if (!result.ok) throw new Error(result.error);
       return result.data;
     },
   });
@@ -103,6 +119,14 @@ export default function PointOfSalePage() {
     },
   });
 
+  const selectedProduct = products.find((p: Product) => p.id === productId);
+  const selectedProductTypeName =
+    (selectedProduct as Product & { productType?: { name?: string } })?.productType?.name ??
+    productTypes.find((pt: { id: string; name: string }) => pt.id === selectedProduct?.productTypeId)?.name ??
+    "";
+  const isSelectedProductLive =
+    selectedProductTypeName.toLowerCase() === "live";
+
   const handleAddProduct = () => {
     if (!productId || !outletId) {
       setError("Select product and outlet.");
@@ -121,18 +145,27 @@ export default function PointOfSalePage() {
       outletId,
       isWholesale
     );
+    const ptName =
+      (product as Product & { productType?: { name?: string } })?.productType?.name ??
+      productTypes.find((pt: { id: string; name: string }) => pt.id === product?.productTypeId)?.name ??
+      "";
+    const isLive = ptName.toLowerCase() === "live";
     setLineItems((prev) => [
       ...prev,
       {
         productId,
         productName: product?.name ?? "—",
-        weight: Number(weight) || 1,
+        ...(isLive
+          ? { weight: Number(weight) || 1, quantity: Number(quantity) || 1 }
+          : { weight: undefined, quantity: Number(quantity) || 1 }),
+        isLive,
         unitPrice,
         customerTypeId: lineTypeId,
         typeName: selectedType?.name ?? "—",
       },
     ]);
     setWeight(1);
+    setQuantity(1);
     setProductId("");
     setError(null);
   };
@@ -142,12 +175,14 @@ export default function PointOfSalePage() {
   };
 
   const total = lineItems.reduce(
-    (sum, item) => sum + item.unitPrice * item.weight,
+    (sum, item) =>
+      sum +
+      item.unitPrice * (item.isLive ? (item.weight ?? 0) : item.quantity),
     0
   );
 
   const createSaleMutation = useMutation({
-    mutationFn: (items: { name: string; contact: string; customerTypeId: string; productId: string; outletId: string; weight: number }[]) =>
+    mutationFn: (items: { name: string; contact: string; customerTypeId: string; productId: string; outletId: string; weight?: number; quantity?: number }[]) =>
       createSale(items),
     onSuccess: (result) => {
       if (result.ok) {
@@ -171,14 +206,18 @@ export default function PointOfSalePage() {
   });
 
   const doCheckout = () => {
-    const items = lineItems.map((item) => ({
-      name: customerName.trim(),
-      contact: customerContact.trim(),
-      customerTypeId: item.customerTypeId,
-      productId: item.productId,
-      outletId,
-      weight: item.weight,
-    }));
+    const items = lineItems.map((item) => {
+      const base = {
+        name: customerName.trim(),
+        contact: customerContact.trim(),
+        customerTypeId: item.customerTypeId,
+        productId: item.productId,
+        outletId,
+      };
+      return item.isLive
+        ? { ...base, weight: item.weight ?? 0, quantity: item.quantity }
+        : { ...base, quantity: item.quantity };
+    });
     createSaleMutation.mutate(items);
     setCheckoutConfirmOpen(false);
   };
@@ -291,17 +330,31 @@ export default function PointOfSalePage() {
             </select>
           </label>
           <label className="posField posFieldQty">
-            <span className="posLabel">Qty/kg</span>
+            <span className="posLabel">Quantity</span>
             <input
               className="posInput"
               type="number"
-              min={0.01}
-              step={0.01}
-              value={weight || ""}
-              onChange={(e) => setWeight(Number(e.target.value) || 0)}
-              aria-label="Quantity in kg"
+              min={1}
+              step={1}
+              value={quantity || ""}
+              onChange={(e) => setQuantity(Math.max(1, Math.floor(Number(e.target.value) || 0)))}
+              aria-label="Quantity"
             />
           </label>
+          {isSelectedProductLive && (
+            <label className="posField posFieldQty">
+              <span className="posLabel">Qty/kg</span>
+              <input
+                className="posInput"
+                type="number"
+                min={0.01}
+                step={0.01}
+                value={weight || ""}
+                onChange={(e) => setWeight(Number(e.target.value) || 0)}
+                aria-label="Weight in kg"
+              />
+            </label>
+          )}
           <button
             type="button"
             className="posAddBtn"
@@ -323,6 +376,7 @@ export default function PointOfSalePage() {
               <tr>
                 <th>PRODUCT NAME</th>
                 <th>TYPE</th>
+                <th>QUANTITY</th>
                 <th>QTY/KG</th>
                 <th>SUB-TOTAL</th>
                 <th aria-label="Remove" />
@@ -331,22 +385,25 @@ export default function PointOfSalePage() {
             <tbody>
               {lineItems.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="posTableEmpty">
+                  <td colSpan={6} className="posTableEmpty">
                     No products added. Select product, type (Retail/Wholesale), and quantity above.
                   </td>
                 </tr>
               ) : (
-                lineItems.map((item, index) => (
+                lineItems.map((item, index) => {
+                  const amount = item.isLive ? (item.weight ?? 0) : item.quantity;
+                  return (
                   <tr key={`${item.productId}-${index}`}>
                     <td>{item.productName}</td>
                     <td>
                       <span className="posLineTypeBadge">{item.typeName}</span>
                     </td>
-                    <td>{item.weight}</td>
+                    <td>{item.quantity}</td>
+                    <td>{item.isLive ? (item.weight ?? "—") : "—"}</td>
                     <td>
-                      {item.weight !== 1
-                        ? `${item.unitPrice}*${item.weight}`
-                        : String(item.unitPrice * item.weight)}
+                      {amount !== 1
+                        ? `${item.unitPrice}*${amount}`
+                        : String(item.unitPrice * amount)}
                     </td>
                     <td>
                       <button
@@ -359,13 +416,14 @@ export default function PointOfSalePage() {
                       </button>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
             {lineItems.length > 0 && (
               <tfoot>
                 <tr>
-                  <td colSpan={3} className="posTotalLabel">
+                  <td colSpan={4} className="posTotalLabel">
                     Total
                   </td>
                   <td className="posTotalValue">{total}</td>
