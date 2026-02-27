@@ -6,16 +6,15 @@ import { useState } from "react";
 import {
   getDashboardSales,
   type DashboardSalesData,
+  type SalesByCustomerItem,
   type SalesByOutletItem,
   type SalesByProductItem,
 } from "@/handlers/sale";
 import { getOutlets } from "@/handlers/outlet";
-import { getProducts } from "@/handlers/product";
 import "./invoicesAnalytics.scss";
 
 const DASHBOARD_SALES_QUERY_KEY = ["dashboardSales"];
 const OUTLETS_QUERY_KEY = ["outlets"];
-const PRODUCTS_QUERY_KEY = ["products"];
 
 export default function InvoicesAnalyticsPage() {
   const router = useRouter();
@@ -43,30 +42,17 @@ export default function InvoicesAnalyticsPage() {
     },
   });
 
-  const { data: products = [] } = useQuery({
-    queryKey: PRODUCTS_QUERY_KEY,
-    queryFn: async () => {
-      const result = await getProducts();
-      if (!result.ok) {
-        if (result.status === 401) router.push("/login");
-        throw new Error(result.error);
-      }
-      return result.data;
-    },
-  });
-
   const data: DashboardSalesData | undefined = salesResponse?.data;
   const totalRevenue = data?.totalRevenue ?? 0;
   const totalTransactions = data?.totalTransactions ?? 0;
-  const totalWeightSold = data?.totalWeightSold ?? 0;
+  const totalWeight = data?.totalWeight ?? 0;
+  const totalQuantity = data?.totalQuantity ?? 0;
   const salesByOutlet = data?.salesByOutlet ?? [];
   const salesByProduct = data?.salesByProduct ?? [];
-
-  const getOutletName = (id: string) => outlets.find((o) => o.id === id)?.name ?? id;
-  const getProductName = (id: string) => products.find((p) => p.id === id)?.name ?? id;
+  const salesByCustomer = data?.salesByCustomer ?? [];
 
   const maxOutletAmount = Math.max(
-    ...salesByOutlet.map((o) => o._sum?.amount ?? 0),
+    ...salesByOutlet.map((o) => o.totalAmount ?? 0),
     1
   );
 
@@ -139,12 +125,12 @@ export default function InvoicesAnalyticsPage() {
             </div>
             <div className="summaryCard">
               <div className="summaryCardLabel">Total Weight</div>
-              <div className="summaryCardValue">{totalWeightSold} kg</div>
+              <div className="summaryCardValue">{totalWeight} kg</div>
               <div className="summaryCardTrend positive">—</div>
             </div>
             <div className="summaryCard">
-              <div className="summaryCardLabel">Profit Margin</div>
-              <div className="summaryCardValue">—</div>
+              <div className="summaryCardLabel">Total Quantity</div>
+              <div className="summaryCardValue">{totalQuantity}</div>
               <div className="summaryCardTrend positive">—</div>
             </div>
           </div>
@@ -154,11 +140,11 @@ export default function InvoicesAnalyticsPage() {
               <h2 className="chartSectionTitle">Outlet Performance</h2>
               <div className="outletBars">
                 {salesByOutlet.map((row: SalesByOutletItem) => {
-                  const amount = row._sum?.amount ?? 0;
+                  const amount = row.totalAmount ?? 0;
                   const pct = maxOutletAmount ? (amount / maxOutletAmount) * 100 : 0;
                   return (
                     <div key={row.outletId} className="outletBarRow">
-                      <span className="outletBarLabel">{getOutletName(row.outletId)}</span>
+                      <span className="outletBarLabel">{row.outletName}</span>
                       <div className="outletBarTrack">
                         <div
                           className="outletBarFill"
@@ -183,16 +169,16 @@ export default function InvoicesAnalyticsPage() {
                       <th>Product</th>
                       <th>Amount (Rs.)</th>
                       <th>Weight (kg)</th>
-                      <th>Transactions</th>
+                      <th>Quantity</th>
                     </tr>
                   </thead>
                   <tbody>
                     {salesByProduct.map((row: SalesByProductItem) => (
                       <tr key={row.productId}>
-                        <td>{getProductName(row.productId)}</td>
-                        <td>{(row._sum?.amount ?? 0).toLocaleString("en-IN")}</td>
-                        <td>{row._sum?.weight ?? "—"}</td>
-                        <td>{row._count?.id ?? 0}</td>
+                        <td>{row.productName}</td>
+                        <td>{(row.totalAmount ?? 0).toLocaleString("en-IN")}</td>
+                        <td>{row.totalWeight ?? "—"}</td>
+                        <td>{row.totalQuantity ?? "—"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -201,7 +187,35 @@ export default function InvoicesAnalyticsPage() {
             </div>
           )}
 
-          {salesByOutlet.length === 0 && salesByProduct.length === 0 && totalTransactions === 0 && (
+          {salesByCustomer.length > 0 && (
+            <div className="chartSection">
+              <h2 className="chartSectionTitle">Sales by Customer</h2>
+              <div className="salesByProductTableWrap">
+                <table className="salesByProductTable">
+                  <thead>
+                    <tr>
+                      <th>Customer</th>
+                      <th>Amount (Rs.)</th>
+                      <th>Weight (kg)</th>
+                      <th>Quantity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {salesByCustomer.map((row: SalesByCustomerItem, idx: number) => (
+                      <tr key={idx}>
+                        <td>{row.customerName}</td>
+                        <td>{(row.totalAmount ?? 0).toLocaleString("en-IN")}</td>
+                        <td>{row.totalWeight ?? "—"}</td>
+                        <td>{row.totalQuantity ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {salesByOutlet.length === 0 && salesByProduct.length === 0 && salesByCustomer.length === 0 && totalTransactions === 0 && (
             <div className="invoicesAnalyticsMessage">No sales data yet.</div>
           )}
         </>

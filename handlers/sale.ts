@@ -152,26 +152,37 @@ export async function createSale(items: SaleItemPayload[]) {
 
 /** Sales by product item from /sales/dashboardSales */
 export type SalesByProductItem = {
-  _sum: { amount: number; quantity: number | null; weight: number | null };
-  _count: { id: number };
   productId: string;
+  productName: string;
+  totalAmount: number;
+  totalQuantity: number;
+  totalWeight: number;
 };
 
 /** Sales by outlet item from /sales/dashboardSales */
 export type SalesByOutletItem = {
-  _sum: { amount: number };
-  _count: { id: number };
   outletId: string;
+  outletName: string;
+  totalAmount: number;
+};
+
+/** Sales by customer item from /sales/dashboardSales */
+export type SalesByCustomerItem = {
+  customerName: string;
+  totalAmount: number;
+  totalQuantity: number;
+  totalWeight: number;
 };
 
 /** Inner data from /sales/dashboardSales */
 export type DashboardSalesData = {
-  totalTransactions?: number;
   totalRevenue?: number;
-  totalQuantitySold?: number;
-  totalWeightSold?: number;
+  totalQuantity?: number;
+  totalWeight?: number;
+  totalTransactions?: number;
   salesByProduct?: SalesByProductItem[];
   salesByOutlet?: SalesByOutletItem[];
+  salesByCustomer?: SalesByCustomerItem[];
   [key: string]: unknown;
 };
 
