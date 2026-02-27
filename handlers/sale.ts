@@ -146,3 +146,49 @@ export async function createSale(items: SaleItemPayload[]) {
     body: JSON.stringify(items),
   });
 }
+
+/** Sales by product item from /sales/dashboardSales */
+export type SalesByProductItem = {
+  _sum: { amount: number; quantity: number | null; weight: number | null };
+  _count: { id: number };
+  productId: string;
+};
+
+/** Sales by outlet item from /sales/dashboardSales */
+export type SalesByOutletItem = {
+  _sum: { amount: number };
+  _count: { id: number };
+  outletId: string;
+};
+
+/** Inner data from /sales/dashboardSales */
+export type DashboardSalesData = {
+  totalTransactions?: number;
+  totalRevenue?: number;
+  totalQuantitySold?: number;
+  totalWeightSold?: number;
+  salesByProduct?: SalesByProductItem[];
+  salesByOutlet?: SalesByOutletItem[];
+  [key: string]: unknown;
+};
+
+/** Full API response for /sales/dashboardSales */
+export type DashboardSalesResponse = {
+  success?: boolean;
+  message?: string;
+  timestamp?: string;
+  data?: DashboardSalesData;
+  [key: string]: unknown;
+};
+
+export async function getDashboardSales(): Promise<
+  | { ok: true; data: DashboardSalesResponse }
+  | { ok: false; error: string; status: number }
+> {
+  const result = await apiRequest<DashboardSalesResponse>(
+    SALES_ROUTES.DASHBOARD_SALES,
+    { method: "GET" }
+  );
+  if (!result.ok) return result;
+  return { ok: true, data: result.data ?? {} };
+}

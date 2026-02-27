@@ -71,6 +71,7 @@ export const SALES_ROUTES = {
   GET: "/sales/get",
   GET_BY_PRODUCT_ID: "/sales/get-by-product-id",
   CREATE: "/sales/create",
+  DASHBOARD_SALES: "/sales/dashboardSales",
 } as const;
 
 export const CUSTOMER_TYPE_ROUTES = {
