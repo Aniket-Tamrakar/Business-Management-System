@@ -26,12 +26,76 @@ export type SaleTransaction = {
   itemCount?: number;
   amount?: number;
   total?: number;
+  totalAmount?: number;
   outletId?: string;
+  outlet?: { id?: string; name?: string };
+  items?: Array<{
+    customerType?: { name?: string };
+    product?: { name?: string };
+    amount?: number;
+    weight?: number;
+  }>;
   [key: string]: unknown;
 };
 
+/** Raw transaction from API when data is object keyed by transactionId */
+type RawTransactionFromApi = {
+  transactionId?: string;
+  name?: string;
+  contact?: string;
+  outlet?: { id?: string; name?: string };
+  createdAt?: string;
+  items?: Array<{
+    customerType?: { name?: string };
+    product?: { name?: string };
+    amount?: number;
+    weight?: number;
+  }>;
+  totalAmount?: number;
+  [key: string]: unknown;
+};
+
+function normalizeTransactionList(
+  raw: GetSalesResponse["data"]
+): SaleTransaction[] {
+  if (raw == null) return [];
+  if (Array.isArray(raw)) {
+    return raw as SaleTransaction[];
+  }
+  const obj = raw as Record<string, RawTransactionFromApi>;
+  return Object.values(obj).map((tx) => {
+    const types = tx.items
+      ?.map((i) => i.customerType?.name)
+      .filter(Boolean) ?? [];
+    const uniqueTypes = [...new Set(types)];
+    const typeDisplay =
+      uniqueTypes.length === 0 ? "—" : uniqueTypes.join(", ");
+    return {
+      id: tx.transactionId ?? "",
+      transactionId: tx.transactionId,
+      name: tx.name,
+      contact: tx.contact,
+      createdAt: tx.createdAt,
+      date: tx.createdAt,
+      outletId: tx.outlet?.id,
+      outlet: tx.outlet,
+      itemsCount: tx.items?.length ?? 0,
+      itemCount: tx.items?.length ?? 0,
+      amount: tx.totalAmount,
+      total: tx.totalAmount,
+      totalAmount: tx.totalAmount,
+      type: typeDisplay,
+      items: tx.items,
+    } as SaleTransaction;
+  });
+}
+
 export type GetSalesResponse = {
-  data?: SaleTransaction[];
+  success?: boolean;
+  message?: string;
+  data?:
+    | SaleTransaction[]
+    | Record<string, RawTransactionFromApi>;
   sales?: SaleTransaction[];
   transactions?: SaleTransaction[];
   [key: string]: unknown;
@@ -51,9 +115,8 @@ export async function getSales(): Promise<
     method: "GET",
   });
   if (!result.ok) return result;
-  const list =
-    result.data?.data ?? result.data?.sales ?? result.data?.transactions ?? [];
-  const data: SaleTransaction[] = Array.isArray(list) ? list : [];
+  const raw = result.data?.data ?? result.data?.sales ?? result.data?.transactions;
+  const data = normalizeTransactionList(raw);
   return { ok: true, data };
 }
 
@@ -72,9 +135,8 @@ export async function getSalesByProductId(
     }
   );
   if (!result.ok) return result;
-  const list =
-    result.data?.data ?? result.data?.sales ?? result.data?.transactions ?? [];
-  const data: SaleTransaction[] = Array.isArray(list) ? list : [];
+  const raw = result.data?.data ?? result.data?.sales ?? result.data?.transactions;
+  const data = normalizeTransactionList(raw);
   return { ok: true, data };
 }
 

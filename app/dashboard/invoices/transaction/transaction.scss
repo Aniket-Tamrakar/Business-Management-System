@@ -168,6 +168,89 @@
   color: #111827;
 }
 
+.transactionRowClickable {
+  cursor: pointer;
+}
+
+.transactionRowClickable:hover {
+  background: #f9fafb;
+}
+
+.transactionDetail {
+  padding: 8px 0;
+}
+
+.transactionDetailList {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 8px 20px;
+  font-size: 14px;
+}
+
+.transactionDetailList dt {
+  margin: 0;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.transactionDetailList dd {
+  margin: 0;
+  color: #111827;
+}
+
+.transactionDetailItems {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.transactionDetailItemsHeader {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.transactionDetailTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.transactionDetailTable th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+  background: #f9fafb;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.transactionDetailTable td {
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  color: #374151;
+}
+
+.transactionDetailTable td:last-child {
+  text-align: right;
+  font-weight: 500;
+}
+
+.transactionDetailTotal {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.transactionDetailTotal dd {
+  font-weight: 600;
+  font-size: 15px;
+}
+
 @media (max-width: 900px) {
   .transactionHeader {
     flex-direction: column;

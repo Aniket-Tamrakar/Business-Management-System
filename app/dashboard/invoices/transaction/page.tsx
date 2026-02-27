@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import Modal from "@/app/components/Modal/Modal";
 import { getSales, type SaleTransaction } from "@/handlers/sale";
 import { getOutlets } from "@/handlers/outlet";
 import "./transaction.scss";
@@ -49,15 +50,23 @@ function getItemsCount(tx: SaleTransaction): string {
 }
 
 function getAmount(tx: SaleTransaction): string {
-  const n = tx.amount ?? tx.total;
+  const n = tx.amount ?? tx.total ?? tx.totalAmount;
   if (n == null) return "—";
   return `Rs.${Number(n).toFixed(2)}`;
+}
+
+function getProductNames(tx: SaleTransaction): string {
+  const names = tx.items
+    ?.map((i) => (typeof i.product === "string" ? i.product : i.product?.name))
+    .filter(Boolean) ?? [];
+  return names.length === 0 ? "—" : names.join(", ");
 }
 
 export default function TransactionPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [outletFilter, setOutletFilter] = useState("");
+  const [selectedTransaction, setSelectedTransaction] = useState<SaleTransaction | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuButtonRef = useRef<HTMLDivElement>(null);
 
@@ -217,7 +226,25 @@ export default function TransactionPage() {
         {!salesLoading &&
           !salesError &&
           filteredTransactions.map((tx) => (
-            <div key={tx.id} className="transactionRow">
+            <div
+              key={tx.id}
+              className="transactionRow transactionRowClickable"
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest(".transactionMenuWrap")) return;
+                setSelectedTransaction(tx);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  if (!(e.target as HTMLElement).closest(".transactionMenuWrap")) {
+                    setSelectedTransaction(tx);
+                  }
+                }
+              }}
+              aria-label={`View details for transaction ${getTransactionId(tx)}`}
+            >
               <span>{getTransactionId(tx)}</span>
               <span>{formatDate(tx)}</span>
               <span>{getCustomerName(tx)}</span>
@@ -240,6 +267,69 @@ export default function TransactionPage() {
             </div>
           ))}
       </div>
+
+      <Modal
+        isOpen={!!selectedTransaction}
+        title={selectedTransaction ? `Transaction ${getTransactionId(selectedTransaction)}` : ""}
+        subtitle={selectedTransaction ? getCustomerName(selectedTransaction) : ""}
+        onClose={() => setSelectedTransaction(null)}
+      >
+        {selectedTransaction && (
+          <div className="transactionDetail">
+            <dl className="transactionDetailList">
+              <dt>Customer</dt>
+              <dd>{getCustomerName(selectedTransaction)}</dd>
+              <dt>Contact</dt>
+              <dd>{selectedTransaction.contact || "—"}</dd>
+              <dt>Date & Time</dt>
+              <dd>{formatDate(selectedTransaction)}</dd>
+              <dt>Type</dt>
+              <dd>{getType(selectedTransaction)}</dd>
+            </dl>
+            {selectedTransaction.items && selectedTransaction.items.length > 0 && (
+              <div className="transactionDetailItems">
+                <div className="transactionDetailItemsHeader">Products</div>
+                <table className="transactionDetailTable">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Qty (kg)</th>
+                      <th>Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedTransaction.items.map((item, idx) => (
+                      <tr key={idx}>
+                        <td>
+                          {typeof item.product === "string"
+                            ? item.product
+                            : item.product?.name ?? "—"}
+                        </td>
+                        <td>{item.weight ?? "—"}</td>
+                        <td>
+                          {item.amount != null
+                            ? `Rs.${Number(item.amount).toFixed(2)}`
+                            : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {(!selectedTransaction.items || selectedTransaction.items.length === 0) && (
+              <dl className="transactionDetailList">
+                <dt>Products</dt>
+                <dd>{getProductNames(selectedTransaction)}</dd>
+              </dl>
+            )}
+            <dl className="transactionDetailList transactionDetailTotal">
+              <dt>Total</dt>
+              <dd>{getAmount(selectedTransaction)}</dd>
+            </dl>
+          </div>
+        )}
+      </Modal>
     </section>
   );
 }
