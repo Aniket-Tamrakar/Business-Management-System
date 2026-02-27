@@ -18,6 +18,12 @@ export type AuthResponseData = {
   message?: string;
   accessToken?: string;
   token?: string;
+  user?: {
+    id?: string;
+    outletId?: string | null;
+    outlet?: { id?: string; name?: string };
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 };
 
@@ -46,6 +52,12 @@ export type LoginResponse = {
 export function getTokenFromAuthResponse(response: LoginResponse | RegisterResponse): string | undefined {
   const data = response.data ?? response;
   return (data as AuthResponseData).accessToken ?? (data as AuthResponseData).token;
+}
+
+/** Get user from login/register API response for storing outletId (Manager/Staff). */
+export function getUserFromAuthResponse(response: LoginResponse | RegisterResponse): AuthResponseData["user"] {
+  const data = response.data ?? response;
+  return (data as AuthResponseData).user;
 }
 
 export async function register(payload: Omit<RegisterPayload, "roleId" | "status">) {

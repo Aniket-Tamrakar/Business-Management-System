@@ -11,6 +11,7 @@ import { TbLayoutDashboard } from "react-icons/tb";
 import { usePermissions } from "@/app/providers/AuthProvider";
 import { logout as logoutApi } from "@/handlers/auth";
 import { clearAuthToken } from "@/lib/auth/token";
+import { clearStoredUser } from "@/lib/auth/user";
 
 /** Menu link; permission "create" means link is shown only when user can create. */
 type MenuItem = {
@@ -139,6 +140,7 @@ export default function Sidebar() {
   const handleLogout = async () => {
     await logoutApi();
     clearAuthToken();
+    clearStoredUser();
     setActiveMenuId(null);
     router.push("/login");
   };

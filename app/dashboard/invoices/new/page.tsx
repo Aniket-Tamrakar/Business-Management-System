@@ -2,8 +2,9 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ConfirmModal from "@/app/components/Modal/ConfirmModal";
+import { useAuth } from "@/app/providers/AuthProvider";
 import { useToast } from "@/app/providers/ToastProvider";
 import { getCustomerTypes } from "@/handlers/customerType";
 import { getDualPricings } from "@/handlers/dualPricing";
@@ -50,6 +51,7 @@ function getUnitPrice(
 export default function PointOfSalePage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { userOutletId } = useAuth();
   const [customerName, setCustomerName] = useState("");
   const [customerContact, setCustomerContact] = useState("");
   const [outletId, setOutletId] = useState("");
@@ -94,6 +96,18 @@ export default function PointOfSalePage() {
       return result.data;
     },
   });
+
+  const outletsForSelect =
+    userOutletId != null
+      ? outlets.filter((o) => o.id === userOutletId)
+      : outlets;
+
+  useEffect(() => {
+    if (userOutletId && outlets.length > 0 && !outletId) {
+      const allowed = outlets.some((o) => o.id === userOutletId);
+      if (allowed) setOutletId(userOutletId);
+    }
+  }, [userOutletId, outlets, outletId]);
 
   const { data: dualPricings = [] } = useQuery({
     queryKey: DUAL_PRICING_QUERY_KEY,
@@ -286,7 +300,7 @@ export default function PointOfSalePage() {
               aria-label="Outlet"
             >
               <option value="">Select outlet</option>
-              {outlets.map((o) => (
+              {outletsForSelect.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.name}
                 </option>

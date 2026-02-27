@@ -1,4 +1,5 @@
 import { clearAuthToken, getAuthToken } from "@/lib/auth/token";
+import { clearStoredUser } from "@/lib/auth/user";
 
 const getBaseUrl = (): string => {
   if (typeof window !== "undefined") {
@@ -36,6 +37,7 @@ export async function apiRequest<T>(
     if (!res.ok) {
       if (res.status === 401) {
         clearAuthToken();
+        clearStoredUser();
       }
       const msg = (data as ApiError).message ?? (data as ApiError).error;
       return { ok: false, error: typeof msg === "string" ? msg : "Request failed.", status: res.status };

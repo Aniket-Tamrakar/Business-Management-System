@@ -5,8 +5,9 @@ import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { getTokenFromAuthResponse, login as loginApi } from "@/handlers/auth";
+import { getTokenFromAuthResponse, getUserFromAuthResponse, login as loginApi } from "@/handlers/auth";
 import { setAuthToken } from "@/lib/auth/token";
+import { setStoredUser } from "@/lib/auth/user";
 import { loginSchema, type LoginFormValues } from "@/schema/auth";
 
 export default function LoginPage() {
@@ -29,6 +30,10 @@ export default function LoginPage() {
         const token = getTokenFromAuthResponse(result.data);
         if (token) {
           setAuthToken(token);
+          const user = getUserFromAuthResponse(result.data);
+          if (user != null && typeof user === "object") {
+            setStoredUser({ outletId: user.outletId ?? null });
+          }
           router.push("/dashboard");
         } else {
           setError("root", { message: "No token received. Please try again." });

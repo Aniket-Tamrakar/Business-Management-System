@@ -11,9 +11,12 @@ import {
 import type { Permissions, RoleName } from "@/lib/auth/permissions";
 import { getPermissions, normalizeRoleName } from "@/lib/auth/permissions";
 import { getRoleFromToken } from "@/lib/auth/role";
+import { getStoredOutletId } from "@/lib/auth/user";
 
 type AuthContextValue = {
   roleName: RoleName | null;
+  /** When set (e.g. Manager/Staff), user is restricted to this outlet. */
+  userOutletId: string | null;
   permissions: Permissions;
   refreshRole: () => void;
 };
@@ -22,10 +25,12 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [roleName, setRoleName] = useState<RoleName | null>(null);
+  const [userOutletId, setUserOutletId] = useState<string | null>(null);
 
   const refreshRole = useCallback(() => {
     const role = getRoleFromToken();
     setRoleName(normalizeRoleName(role));
+    setUserOutletId(getStoredOutletId());
   }, []);
 
   useEffect(() => {
@@ -40,10 +45,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       roleName,
+      userOutletId,
       permissions,
       refreshRole,
     }),
-    [roleName, permissions, refreshRole]
+    [roleName, userOutletId, permissions, refreshRole]
   );
 
   return (
@@ -56,6 +62,7 @@ export function useAuth(): AuthContextValue {
   if (ctx == null) {
     return {
       roleName: null,
+      userOutletId: null,
       permissions: getPermissions(null),
       refreshRole: () => {},
     };
