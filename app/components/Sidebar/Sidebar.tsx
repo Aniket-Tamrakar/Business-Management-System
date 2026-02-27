@@ -42,12 +42,11 @@ const sidebarConfig = {
           href: "#",
           icon: <LuReceiptText size={20} />,
           menu: {
-            title: "Invoices",
+            title: "Sales & Billing",
             items: [
               { label: "Analytics", href: "/dashboard/invoices" },
               { label: "Point of Sale", href: "/dashboard/invoices/new", permission: "create" as const },
               { label: "Transactions", href: "/dashboard/invoices/transaction" },
-              { label: "Pricelist", href: "/dashboard/settings/dualPricing" },
               { label: "Customer Types", href: "/dashboard/invoices/customer-types" },
             ] as MenuItem[],
           },
@@ -63,6 +62,8 @@ const sidebarConfig = {
               { label: "Product Type", href: "/dashboard/product/productType" },
               { label: "Live", href: "/dashboard/product/liveProduct" },
               { label: "Processed", href: "/dashboard/product/processedProduct" },
+              { label: "Pricelist", href: "/dashboard/settings/dualPricing" },
+
             ] as MenuItem[],
           },
         },
@@ -71,7 +72,7 @@ const sidebarConfig = {
           href: "#",
           icon: <LuUserCog size={20} />,
           menu: {
-            title: "Accounts",
+            title: "Attendance",
             items: [
               { label: "Analytics", href: "/dashboard/accounts/analytics" },
               { label: "Clock In/Out", href: "/dashboard/accounts/clock-in-out" },
