@@ -21,7 +21,7 @@ type MenuItem = {
 };
 
 const sidebarConfig = {
-  header: { title: "BMS" },
+  header: { title: "HMP" },
   sections: [
     {
       items: [
