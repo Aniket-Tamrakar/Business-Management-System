@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ConfirmModal from "@/app/components/Modal/ConfirmModal";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useToast } from "@/app/providers/ToastProvider";
@@ -25,11 +25,7 @@ const CUSTOMER_TYPES_QUERY_KEY = ["customerTypes"];
 type LineItem = {
   productId: string;
   productName: string;
-  /** Live: weight in kg. Processed: undefined */
-  weight?: number;
-  /** Quantity: both for Live, only this for Processed */
   quantity: number;
-  isLive: boolean;
   unitPrice: number;
   customerTypeId: string;
   typeName: string;
@@ -57,7 +53,6 @@ export default function PointOfSalePage() {
   const [outletId, setOutletId] = useState("");
   const [productId, setProductId] = useState("");
   const [lineTypeId, setLineTypeId] = useState("");
-  const [weight, setWeight] = useState<number>(1);
   const [quantity, setQuantity] = useState<number>(1);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -133,13 +128,15 @@ export default function PointOfSalePage() {
     },
   });
 
-  const selectedProduct = products.find((p: Product) => p.id === productId);
-  const selectedProductTypeName =
-    (selectedProduct as Product & { productType?: { name?: string } })?.productType?.name ??
-    productTypes.find((pt: { id: string; name: string }) => pt.id === selectedProduct?.productTypeId)?.name ??
-    "";
-  const isSelectedProductLive =
-    selectedProductTypeName.toLowerCase() === "live";
+  const processedProducts = useMemo(() => {
+    return products.filter((p: Product) => {
+      const ptName =
+        (p as Product & { productType?: { name?: string } })?.productType?.name ??
+        productTypes.find((pt: { id: string; name: string }) => pt.id === p.productTypeId)?.name ??
+        "";
+      return ptName.toLowerCase() === "processed";
+    });
+  }, [products, productTypes]);
 
   const handleAddProduct = () => {
     if (!productId || !outletId) {
@@ -159,26 +156,17 @@ export default function PointOfSalePage() {
       outletId,
       isWholesale
     );
-    const ptName =
-      (product as Product & { productType?: { name?: string } })?.productType?.name ??
-      productTypes.find((pt: { id: string; name: string }) => pt.id === product?.productTypeId)?.name ??
-      "";
-    const isLive = ptName.toLowerCase() === "live";
     setLineItems((prev) => [
       ...prev,
       {
         productId,
         productName: product?.name ?? "—",
-        ...(isLive
-          ? { weight: Number(weight) || 1, quantity: Number(quantity) || 1 }
-          : { weight: undefined, quantity: Number(quantity) || 1 }),
-        isLive,
+        quantity: Number(quantity) || 1,
         unitPrice,
         customerTypeId: lineTypeId,
         typeName: selectedType?.name ?? "—",
       },
     ]);
-    setWeight(1);
     setQuantity(1);
     setProductId("");
     setError(null);
@@ -189,14 +177,12 @@ export default function PointOfSalePage() {
   };
 
   const total = lineItems.reduce(
-    (sum, item) =>
-      sum +
-      item.unitPrice * (item.isLive ? (item.weight ?? 0) : item.quantity),
+    (sum, item) => sum + item.unitPrice * item.quantity,
     0
   );
 
   const createSaleMutation = useMutation({
-    mutationFn: (items: { name: string; contact: string; customerTypeId: string; productId: string; outletId: string; weight?: number; quantity?: number }[]) =>
+    mutationFn: (items: { name: string; contact: string; customerTypeId: string; productId: string; outletId: string; quantity: number }[]) =>
       createSale(items),
     onSuccess: (result) => {
       if (result.ok) {
@@ -220,18 +206,14 @@ export default function PointOfSalePage() {
   });
 
   const doCheckout = () => {
-    const items = lineItems.map((item) => {
-      const base = {
-        name: customerName.trim(),
-        contact: customerContact.trim(),
-        customerTypeId: item.customerTypeId,
-        productId: item.productId,
-        outletId,
-      };
-      return item.isLive
-        ? { ...base, weight: item.weight ?? 0, quantity: item.quantity }
-        : { ...base, quantity: item.quantity };
-    });
+    const items = lineItems.map((item) => ({
+      name: customerName.trim(),
+      contact: customerContact.trim(),
+      customerTypeId: item.customerTypeId,
+      productId: item.productId,
+      outletId,
+      quantity: item.quantity,
+    }));
     createSaleMutation.mutate(items);
     setCheckoutConfirmOpen(false);
   };
@@ -320,7 +302,7 @@ export default function PointOfSalePage() {
               aria-label="Product"
             >
               <option value="">Select product</option>
-              {products.map((p: Product) => (
+              {processedProducts.map((p: Product) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
@@ -355,20 +337,6 @@ export default function PointOfSalePage() {
               aria-label="Quantity"
             />
           </label>
-          {isSelectedProductLive && (
-            <label className="posField posFieldQty">
-              <span className="posLabel">Qty/kg</span>
-              <input
-                className="posInput"
-                type="number"
-                min={0.01}
-                step={0.01}
-                value={weight || ""}
-                onChange={(e) => setWeight(Number(e.target.value) || 0)}
-                aria-label="Weight in kg"
-              />
-            </label>
-          )}
           <button
             type="button"
             className="posAddBtn"
@@ -391,7 +359,6 @@ export default function PointOfSalePage() {
                 <th>PRODUCT NAME</th>
                 <th>TYPE</th>
                 <th>QUANTITY</th>
-                <th>QTY/KG</th>
                 <th>SUB-TOTAL</th>
                 <th aria-label="Remove" />
               </tr>
@@ -399,25 +366,22 @@ export default function PointOfSalePage() {
             <tbody>
               {lineItems.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="posTableEmpty">
+                  <td colSpan={5} className="posTableEmpty">
                     No products added. Select product, type (Retail/Wholesale), and quantity above.
                   </td>
                 </tr>
               ) : (
-                lineItems.map((item, index) => {
-                  const amount = item.isLive ? (item.weight ?? 0) : item.quantity;
-                  return (
+                lineItems.map((item, index) => (
                   <tr key={`${item.productId}-${index}`}>
                     <td>{item.productName}</td>
                     <td>
                       <span className="posLineTypeBadge">{item.typeName}</span>
                     </td>
                     <td>{item.quantity}</td>
-                    <td>{item.isLive ? (item.weight ?? "—") : "—"}</td>
                     <td>
-                      {amount !== 1
-                        ? `${item.unitPrice}*${amount}`
-                        : String(item.unitPrice * amount)}
+                      {item.quantity !== 1
+                        ? `${item.unitPrice}×${item.quantity}`
+                        : String(item.unitPrice * item.quantity)}
                     </td>
                     <td>
                       <button
@@ -430,14 +394,13 @@ export default function PointOfSalePage() {
                       </button>
                     </td>
                   </tr>
-                  );
-                })
+                ))
               )}
             </tbody>
             {lineItems.length > 0 && (
               <tfoot>
                 <tr>
-                  <td colSpan={4} className="posTotalLabel">
+                  <td colSpan={3} className="posTotalLabel">
                     Total
                   </td>
                   <td className="posTotalValue">{total}</td>
