@@ -21,9 +21,9 @@ export default function LayoutWrapper({
   return (
     <AuthProvider>
       <ToastProvider>
-        <div className="flex min-h-screen w-full">
+        <div className="flex min-h-screen w-full overflow-x-hidden">
           <Sidebar />
-          <main className="flex h-screen flex-1 flex-col items-center overflow-y-auto bg-white px-8 pt-8 pb-[7px] dark:bg-black sm:items-start">
+          <main className="flex h-screen min-w-0 flex-1 flex-col items-center overflow-x-hidden overflow-y-auto bg-white px-4 pt-8 pb-20 dark:bg-black sm:items-start md:px-8 md:pb-[7px]">
             {children}
           </main>
         </div>

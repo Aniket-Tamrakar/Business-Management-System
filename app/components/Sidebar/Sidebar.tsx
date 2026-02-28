@@ -88,19 +88,19 @@ const sidebarConfig = {
   footer: [
     {
       items: [
-        {
-          id: "teams",
-          href: "#",
-          icon: <FiUsers size={20} />,
-          menu: {
-            title: "Teams",
-            items: [
-              { label: "Team members", href: "/dashboard/teams" },
-              { label: "Invitations", href: "/dashboard/teams/invitations" },
-              { label: "Access", href: "/dashboard/teams/access" },
-            ] as MenuItem[],
-          },
-        },
+        // {
+        //   id: "teams",
+        //   href: "#",
+        //   icon: <FiUsers size={20} />,
+        //   menu: {
+        //     title: "Teams",
+        //     items: [
+        //       { label: "Team members", href: "/dashboard/teams" },
+        //       { label: "Invitations", href: "/dashboard/teams/invitations" },
+        //       { label: "Access", href: "/dashboard/teams/access" },
+        //     ] as MenuItem[],
+        //   },
+        // },
         {
           id: "settings",
           href: "#",
@@ -187,6 +187,14 @@ export default function Sidebar() {
         </div>
       </aside>
 
+      {activeMenu && (
+        <button
+          type="button"
+          className="drawerBackdrop visible"
+          onClick={() => setActiveMenuId(null)}
+          aria-label="Close menu"
+        />
+      )}
       <div className={activeMenu ? "drawer open" : "drawer"}>
         <div className="drawerHeader">
           <span className="drawerTitle">{activeMenu?.title}</span>
