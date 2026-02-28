@@ -33,13 +33,9 @@ export async function getUsers(): Promise<
   return { ok: true, data };
 }
 
-/** Default outlet ID used when creating a user (no outlet field in form yet). */
-export const DEFAULT_OUTLET_ID = "694519f2-433a-45c4-a6a8-c28dd02afe45";
-
 export type CreateUserPayload = {
   fullName: string;
   roleId: string;
-  outletId: string;
   status: boolean;
   email: string;
   contact?: string;
@@ -55,7 +51,6 @@ export async function createUser(payload: CreateUserFormValues) {
   const body: CreateUserPayload = {
     fullName: payload.fullName.trim(),
     roleId: payload.roleId,
-    outletId: DEFAULT_OUTLET_ID,
     status: payload.status === "Active",
     email: payload.email.trim().toLowerCase(),
   };

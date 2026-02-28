@@ -7,8 +7,7 @@ export const createOutletSchema = z.object({
     .max(200, "Outlet name is too long"),
   managerId: z
     .string()
-    .min(1, "Manager is required")
-    .uuid("Manager must be selected"),
+    .min(1, "Manager must be selected"),
   contact: z
     .string()
     .min(1, "Contact is required")
