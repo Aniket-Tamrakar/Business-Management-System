@@ -411,13 +411,13 @@ export default function PointOfSalePage() {
           </table>
         </div>
 
-        <button
+        {/* <button
           type="button"
           className="posAddMoreBtn"
           onClick={() => productSelectRef.current?.focus()}
         >
           + Add more products
-        </button>
+        </button> */}
 
         <button
           type="button"
